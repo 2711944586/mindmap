@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>论文研究图谱 — 推荐曝光结构外部性研究</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════ 全局变量 ═══════════════ */
+:root {
+  --g-from: #0891b2;
+  --g-to: #06b6d4;
+  --bg: #f0f4f8;
+  --fg: #1e293b;
+  --surface: rgba(255,255,255,.82);
+  --surface-solid: #ffffff;
+  --border: rgba(148,163,184,.18);
+  --shadow-sm: 0 2px 8px rgba(15,23,42,.04);
+  --shadow-md: 0 8px 24px rgba(15,23,42,.06);
+  --shadow-lg: 0 20px 50px rgba(15,23,42,.1);
+  --radius: 14px;
+  --radius-sm: 10px;
+  --font: "Inter","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --transition: .3s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="dark"] {
+  --bg: #0c1222;
+  --fg: #e2e8f0;
+  --surface: rgba(30,41,59,.78);
+  --surface-solid: #1e293b;
+  --border: rgba(71,85,105,.4);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,.2);
+  --shadow-md: 0 8px 24px rgba(0,0,0,.25);
+  --shadow-lg: 0 20px 50px rgba(0,0,0,.4);
+}
+
+/* ═══════════════ 重置 ═══════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--fg);
+  transition: background var(--transition), color var(--transition);
+}
+
+/* ═══════════════ 背景装饰 ═══════════════ */
+body::before {
+  content: '';
+  position: fixed;
+  top: -40%; right: -20%;
+  width: 80vw; height: 80vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--g-from) 12%, transparent) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -30%; left: -15%;
+  width: 60vw; height: 60vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--g-to) 10%, transparent) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ═══════════════ 思维导图画布 ═══════════════ */
+.markmap {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+}
+.markmap svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ═══════════════ 顶部工具栏 ═══════════════ */
+.toolbar {
+  position: fixed;
+  top: 16px; left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  box-shadow: var(--shadow-md);
+  z-index: 200;
+  transition: all var(--transition);
+}
+.toolbar:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+/* 品牌标识 */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 12px;
+  border-right: 1px solid var(--border);
+  margin-right: 4px;
+  text-decoration: none;
+  color: var(--fg);
+}
+.brand-icon {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--g-from), var(--g-to));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--g-from) 30%, transparent);
+}
+.brand-text {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+.brand-sub {
+  font-size: 10px;
+  font-weight: 500;
+  opacity: .5;
+}
+
+/* 按钮 */
+.tbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 100px;
+  background: transparent;
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.tbtn:hover {
+  background: color-mix(in srgb, var(--g-from) 8%, transparent);
+  border-color: color-mix(in srgb, var(--g-from) 15%, transparent);
+}
+.tbtn:active {
+  transform: scale(.96);
+}
+.tbtn svg {
+  width: 16px; height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tbtn-icon {
+  padding: 0;
+  width: 34px;
+}
+
+/* 搜索 */
+.search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 100px;
+  background: color-mix(in srgb, var(--fg) 4%, transparent);
+  transition: all .2s;
+}
+.search:focus-within {
+  background: var(--surface-solid);
+  border-color: var(--g-from);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--g-from) 12%, transparent);
+}
+.search svg {
+  width: 14px; height: 14px;
+  fill: none; stroke: currentColor;
+  stroke-width: 2; opacity: .4;
+}
+.search input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: var(--font);
+  font-size: 12px;
+  color: var(--fg);
+  width: 120px;
+}
+.search input::placeholder { color: color-mix(in srgb, var(--fg) 35%, transparent); }
+
+/* 分隔符 */
+.sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+/* ═══════════════ 底部统计 ═══════════════ */
+.stats {
+  position: fixed;
+  bottom: 20px; left: 20px;
+  display: flex; gap: 6px;
+  z-index: 200;
+}
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-sm);
+}
+.stat-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--g-from), var(--g-to));
+}
+
+/* ═══════════════ 响应式 ═══════════════ */
+@media (max-width: 768px) {
+  .toolbar { top: 10px; padding: 6px 10px; gap: 4px; max-width: calc(100vw - 20px); flex-wrap: wrap; justify-content: center; }
+  .brand { display: none; }
+  .search input { width: 80px; }
+  .tbtn span { display: none; }
+  .stats { left: 10px; bottom: 10px; }
+}
+
+/* ═══════════════ 打印 ═══════════════ */
+@media print {
+  .toolbar, .stats { display: none !important; }
+  body::before, body::after { display: none; }
+}
+
+/* ═══════════════ markmap 节点文字 ═══════════════ */
+.markmap-node text {
+  font-family: var(--font) !important;
+}
+</style>
+</head>
+<body>
+
+<!-- ── 工具栏 ── -->
+<div class="toolbar">
+  <a class="brand" href="index.html" title="返回首页">
+    <div class="brand-icon">🧭</div>
+    <div>
+      <div class="brand-text">论文研究图谱</div>
+      <div class="brand-sub">对象层次 · 三组件框架 · 理论边界 · 评估协议</div>
+    </div>
+  </a>
+
+  <div class="search">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input id="searchInput" type="text" placeholder="搜索节点…"/>
+  </div>
+
+  <div class="sep"></div>
+
+  <button class="tbtn" id="btnExpand" title="展开全部">
+    <svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+    <span>展开</span>
+  </button>
+  <button class="tbtn" id="btnCollapse" title="收起">
+    <svg viewBox="0 0 24 24"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+    <span>收起</span>
+  </button>
+
+  <div class="sep"></div>
+
+  <button class="tbtn tbtn-icon" id="btnZoomIn" title="放大">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+  </button>
+  <button class="tbtn tbtn-icon" id="btnZoomOut" title="缩小">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+  </button>
+  <button class="tbtn tbtn-icon" id="btnFit" title="适配画面">
+    <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+  </button>
+
+  <div class="sep"></div>
+
+  <button class="tbtn tbtn-icon" id="btnDark" title="主题切换">
+    <svg id="iconSun" viewBox="0 0 24 24" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    <svg id="iconMoon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+  </button>
+  <button class="tbtn tbtn-icon" id="btnFS" title="全屏">
+    <svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+  </button>
+</div>
+
+<!-- ── 思维导图 ── -->
+<div class="markmap">
+<script type="text/template">
+---
+markmap:
+  initialExpandLevel: 2
+  maxWidth: 380
+  colorFreezeLevel: 3
+---
+
+# 论文研究图谱
+
+## 一、论文的起点：推荐是重复可见性分配 <!-- markmap: fold -->
+### 为什么必须改写对象
+- 推荐系统控制的是请求级列表分配，不是社交关系本身
+- 审计者真正能观察的是时间窗口内累积形成的曝光图
+- 研究对象是**曝光结构**，不是态度极化结果
+### 三层对象声明
+- 行动层：请求 `r`、候选集 `C_r`、推荐列表 `a_r`
+- 审计层：动态曝光图 `G_t = (U, E_t, f_t)`
+- 诊断层：`G_t` 上的三元组结构条件
+### 论文主动不做什么
+- 不把结构风险直接等同于 echo chamber 本体
+- 不把风险分数直接外推为福利或态度改善
+- 不把日志代理包装成真实线上随机实验
+
+## 二、四个研究缺口 <!-- markmap: fold -->
+### 缺口 1：缺少结构性曝光诊断工具
+- 二元层审计难以捕捉局部方向性闭合与回流
+- 高阶结构信号在推荐曝光图中仍未被系统引入
+### 缺口 2：固定权重公式不稳
+- 手工指数容易被活跃度计数这类强基线匹配或超过
+- 风险诊断必须转向数据驱动和校准化
+### 缺口 3：用户聚合代理脱离列表级现实
+- 真实系统在请求-候选集-列表层运作
+- 只看用户聚合层会丢失位置偏差和列表组成效应
+### 缺口 4：干预和评估容易自指
+- 若重排序器仅最小化自身输出，就难以证明结构信号的独立价值
+- 诊断目标、评估指标和干预动作必须拆开
+
+## 三、三组件框架 <!-- markmap: fold -->
+### TSFB：三元组结构特征库
+- 核心结构层 + 背景控制层
+- 核心层覆盖四类机制：`C / I / P / A`
+- 控制层吸收活跃度、体量、熵、度不对称、列表上下文
+### TSHM：多任务校准风险模型
+- 目标是结构性、分布性、复合性三类负面分配事件
+- 预测目标在公式上独立于输入特征
+- 单调约束 + ECE 校准 + 共享过程依赖透明报告
+### SECR：结构性外部性约束重排序
+- 在列表级别联合优化效用 `U`、公平 `F`、结构风险 `S`
+- 位置贪心 + 局部增量风险近似 + 邻域截断 `L`
+- 是可审计干预原型，不是福利最优器
+
+## 四、四个机制对齐特征 <!-- markmap: fold -->
+### `C`：方向性循环
+- 机制：拓扑旋度 / 非势流闭合
+- 作用：识别二元分析不可见的局部环流
+- 理论锚点：Hodge 分解的旋度分量
+### `I`：跨群体隔离
+- 机制：边界混合 / 隔离
+- 作用：衡量三元组边界上的内群体边比例
+- 只在标签明确时启用
+### `P`：时间持续性
+- 机制：跨窗口复现
+- 作用：区分持续锁定与一次性扰动
+- 方向不强行约束，交由数据决定
+### `A`：放大集中
+- 机制：边权重集中 / 单向主导
+- 作用：检测是否由少数边持续吸走曝光
+- 与公平问题直接相连
+
+## 五、方法链路如何闭环 <!-- markmap: fold -->
+### 第一步：从列表诱导曝光图
+- 每次请求产生位置加权曝光 `e_(r,k)`
+- 窗口内累计为 `f_t(e)`，构成动态曝光图
+- 单个列表是行动对象，曝光图是审计对象
+### 第二步：从曝光图提取三元组结构
+- 三元组是能同时容纳共同暴露、方向性和局部闭环的最小单元
+- `f_t^(q)(e)` 用反向边差异的符号编码不对称
+- TSFB 输出核心结构信号与控制变量
+### 第三步：把结构条件映射成风险
+- TSHM 输出 `p^(1) / p^(2) / p^(3)` 三项任务风险
+- 聚合风险 `p^agg` 只作为默认操作化入口
+- 风险信号服务于审计触发，而不是最终因果判断
+### 第四步：回到列表级重排序
+- SECR 在候选集中逐位置选择项目
+- 每一步同时考虑效用、公平、局部增量风险
+- 图级结构条件由列表级动作被操作化
+
+## 六、理论性质与解释边界 <!-- markmap: fold -->
+### 命题 1：旋度-势流可分
+- 三元组局部旋度与梯度势流正交
+- 高阶层揭示二元分析不可见的信息盲区
+### 命题 2：受限条件下的贪心合理性
+- 当效用可分、`L = 1` 且使用局部近似时
+- 位置贪心有条件性的启发式保证
+- 不是对所有配置的一般最优性证明
+### 命题 3：审计范围边界
+- 结构条件诊断停留在 `G_t -> 三元组条件` 这一段
+- 不向态度、行为或福利结果做直接推断
+- 这是设计支柱，不是未声明的局限
+
+## 七、评估协议与失败判据 <!-- markmap: fold -->
+### 三层证据架构
+- 第一层：MIND / FINN.no Slates / KuaiRand
+- 第二层：四类失配压力测试
+- 第三层：历史重放与方向一致性参考
+### 诊断指标
+- ROC AUC / PR AUC / Brier / ECE
+- 特征消融 `ΔAUC`
+- 互信息分解：核心层 vs 控制层
+### 策略指标
+- NDCG@K
+- 提供者公平差距 / 用户公平差距
+- 覆盖率、多样性、结构风险降幅
+- 与基线排名的策略距离
+### 失败判据
+- TSHM 不能显著超过 ActivityCount
+- 移除核心特征后性能几乎不变
+- SECR 以超过 15% 的 NDCG 损失换取风险下降
+- 校准后任一任务 `ECE > 0.10`
+
+## 八、当前手稿的最稳定位 <!-- markmap: fold -->
+### 可以成立的说法
+- 一篇对象定义清楚、机制链完整的方法稿
+- 卖点是“诊断先于治理”的中间层框架
+- 亮点在对象重写、风险校准、结构性外部性约束
+### 不能越界的说法
+- 不能写成真实平台随机实验稿
+- 不能写成全面优于所有强基线
+- 不能写成风险下降自动带来态度改善
+### 结尾口径
+- 论文提供的是推荐曝光网络上的结构风险诊断与结构保持治理原型
+- 它把对象层、方法层、证据层和解释边界一起写清了
+- 图表与实验结果更新后再补数值，不提前预支结论
+
+
+</script>
+</div>
+
+<!-- ── 统计 ── -->
+<div class="stats">
+  <div class="stat"><span class="stat-dot"></span><span id="sNodes">–</span></div>
+  <div class="stat"><span class="stat-dot"></span><span id="sDepth">–</span></div>
+</div>
+
+<!-- ── markmap autoloader ── -->
+<script src="https://cdn.jsdelivr.net/npm/markmap-autoloader@latest"></script>
+
+<script>
+(() => {
+  /* ── 等待 markmap 渲染完成 ── */
+  const waitForMM = (cb, tries = 0) => {
+    /* autoloader 在 .markmap 的子 SVG 上挂载实例 */
+    const el = document.querySelector('.markmap');
+    const svg = el && el.querySelector('svg');
+    const mm = svg && (svg.markmap || svg.__markmap__);
+    /* 也检查全局 */
+    const mmGlobal = window.markmap;
+    if (mm && mm.state && mm.state.data) {
+      cb(mm, svg); return;
+    }
+    /* 备选：检查 SVG 是否已有子元素（渲染完成标志） */
+    if (svg && svg.querySelector('g') && svg.querySelector('g').children.length > 2) {
+      /* 无直接实例引用，用轮询 DOM 操作替代 */
+      cb(null, svg); return;
+    }
+    if (tries < 100) setTimeout(() => waitForMM(cb, tries + 1), 200);
+  };
+
+  waitForMM((mm, svg) => {
+    if (!mm) {
+      /* 没有获取到实例引用，按钮暂不绑定 */
+      console.log('Markmap rendered but instance not accessible');
+      return;
+    }
+
+    /* ── 统计 ── */
+    let nc = 0, md = 0;
+    const walk = (n, d) => { nc++; if (d > md) md = d; (n.children||[]).forEach(c => walk(c, d+1)); };
+    if (mm.state && mm.state.data) walk(mm.state.data, 0);
+    document.getElementById('sNodes').textContent = nc + ' 节点';
+    document.getElementById('sDepth').textContent = md + ' 层';
+
+    /* ── 克隆树 + 遍历 ── */
+    const cloneTree = (n) => ({ ...n, payload: n.payload ? { ...n.payload } : {}, children: (n.children||[]).map(cloneTree) });
+    const walkSet = (n, d, fn) => { fn(n, d); (n.children||[]).forEach(c => walkSet(c, d+1, fn)); };
+
+    /* ── 展开/收起 ── */
+    document.getElementById('btnExpand').addEventListener('click', async () => {
+      const r = cloneTree(mm.state.data);
+      walkSet(r, 0, (n) => { n.payload = { ...(n.payload||{}), fold: 0 }; });
+      await mm.setData(r); await mm.fit();
+    });
+    document.getElementById('btnCollapse').addEventListener('click', async () => {
+      const r = cloneTree(mm.state.data);
+      walkSet(r, 0, (n, d) => { n.payload = { ...(n.payload||{}), fold: d >= 2 ? 1 : 0 }; });
+      await mm.setData(r); await mm.fit();
+    });
+
+    /* ── 缩放 ── */
+    document.getElementById('btnZoomIn').addEventListener('click', () => {
+      mm.rescale(1.25);
+    });
+    document.getElementById('btnZoomOut').addEventListener('click', () => {
+      mm.rescale(0.8);
+    });
+    document.getElementById('btnFit').addEventListener('click', () => {
+      mm.fit();
+    });
+
+    /* ── 搜索 ── */
+    let timer;
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const q = e.target.value.trim().toLowerCase();
+        svg.querySelectorAll('text').forEach(t => {
+          const match = q && t.textContent.toLowerCase().includes(q);
+          t.style.fill = match ? 'var(--g-from)' : '';
+          t.style.fontWeight = match ? '800' : '';
+          t.style.fontSize = match ? '1.1em' : '';
+        });
+      }, 200);
+    });
+  });
+
+  /* ── 深色模式 ── */
+  const apply = (dark) => {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    document.getElementById('iconSun').style.display = dark ? 'block' : 'none';
+    document.getElementById('iconMoon').style.display = dark ? 'none' : 'block';
+    localStorage.setItem('mm-theme', dark ? 'dark' : 'light');
+  };
+  const saved = localStorage.getItem('mm-theme');
+  apply(saved === 'dark' || (!saved && matchMedia('(prefers-color-scheme:dark)').matches));
+  document.getElementById('btnDark').addEventListener('click', () => {
+    apply(document.documentElement.getAttribute('data-theme') !== 'dark');
+  });
+
+  /* ── 全屏 ── */
+  document.getElementById('btnFS').addEventListener('click', () => {
+    document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+  });
+})();
+</script>
+</body>
+</html>

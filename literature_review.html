@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>文献综述图谱 — 推荐曝光结构外部性研究</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════ 全局变量 ═══════════════ */
+:root {
+  --g-from: #6366f1;
+  --g-to: #a855f7;
+  --bg: #f0f4f8;
+  --fg: #1e293b;
+  --surface: rgba(255,255,255,.82);
+  --surface-solid: #ffffff;
+  --border: rgba(148,163,184,.18);
+  --shadow-sm: 0 2px 8px rgba(15,23,42,.04);
+  --shadow-md: 0 8px 24px rgba(15,23,42,.06);
+  --shadow-lg: 0 20px 50px rgba(15,23,42,.1);
+  --radius: 14px;
+  --radius-sm: 10px;
+  --font: "Inter","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --transition: .3s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="dark"] {
+  --bg: #0c1222;
+  --fg: #e2e8f0;
+  --surface: rgba(30,41,59,.78);
+  --surface-solid: #1e293b;
+  --border: rgba(71,85,105,.4);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,.2);
+  --shadow-md: 0 8px 24px rgba(0,0,0,.25);
+  --shadow-lg: 0 20px 50px rgba(0,0,0,.4);
+}
+
+/* ═══════════════ 重置 ═══════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--fg);
+  transition: background var(--transition), color var(--transition);
+}
+
+/* ═══════════════ 背景装饰 ═══════════════ */
+body::before {
+  content: '';
+  position: fixed;
+  top: -40%; right: -20%;
+  width: 80vw; height: 80vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--g-from) 12%, transparent) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -30%; left: -15%;
+  width: 60vw; height: 60vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--g-to) 10%, transparent) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ═══════════════ 思维导图画布 ═══════════════ */
+.markmap {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+}
+.markmap svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ═══════════════ 顶部工具栏 ═══════════════ */
+.toolbar {
+  position: fixed;
+  top: 16px; left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  box-shadow: var(--shadow-md);
+  z-index: 200;
+  transition: all var(--transition);
+}
+.toolbar:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+/* 品牌标识 */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 12px;
+  border-right: 1px solid var(--border);
+  margin-right: 4px;
+  text-decoration: none;
+  color: var(--fg);
+}
+.brand-icon {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--g-from), var(--g-to));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--g-from) 30%, transparent);
+}
+.brand-text {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+.brand-sub {
+  font-size: 10px;
+  font-weight: 500;
+  opacity: .5;
+}
+
+/* 按钮 */
+.tbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 100px;
+  background: transparent;
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.tbtn:hover {
+  background: color-mix(in srgb, var(--g-from) 8%, transparent);
+  border-color: color-mix(in srgb, var(--g-from) 15%, transparent);
+}
+.tbtn:active {
+  transform: scale(.96);
+}
+.tbtn svg {
+  width: 16px; height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tbtn-icon {
+  padding: 0;
+  width: 34px;
+}
+
+/* 搜索 */
+.search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 100px;
+  background: color-mix(in srgb, var(--fg) 4%, transparent);
+  transition: all .2s;
+}
+.search:focus-within {
+  background: var(--surface-solid);
+  border-color: var(--g-from);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--g-from) 12%, transparent);
+}
+.search svg {
+  width: 14px; height: 14px;
+  fill: none; stroke: currentColor;
+  stroke-width: 2; opacity: .4;
+}
+.search input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: var(--font);
+  font-size: 12px;
+  color: var(--fg);
+  width: 120px;
+}
+.search input::placeholder { color: color-mix(in srgb, var(--fg) 35%, transparent); }
+
+/* 分隔符 */
+.sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+/* ═══════════════ 底部统计 ═══════════════ */
+.stats {
+  position: fixed;
+  bottom: 20px; left: 20px;
+  display: flex; gap: 6px;
+  z-index: 200;
+}
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-sm);
+}
+.stat-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--g-from), var(--g-to));
+}
+
+/* ═══════════════ 响应式 ═══════════════ */
+@media (max-width: 768px) {
+  .toolbar { top: 10px; padding: 6px 10px; gap: 4px; max-width: calc(100vw - 20px); flex-wrap: wrap; justify-content: center; }
+  .brand { display: none; }
+  .search input { width: 80px; }
+  .tbtn span { display: none; }
+  .stats { left: 10px; bottom: 10px; }
+}
+
+/* ═══════════════ 打印 ═══════════════ */
+@media print {
+  .toolbar, .stats { display: none !important; }
+  body::before, body::after { display: none; }
+}
+
+/* ═══════════════ markmap 节点文字 ═══════════════ */
+.markmap-node text {
+  font-family: var(--font) !important;
+}
+</style>
+</head>
+<body>
+
+<!-- ── 工具栏 ── -->
+<div class="toolbar">
+  <a class="brand" href="index.html" title="返回首页">
+    <div class="brand-icon">📚</div>
+    <div>
+      <div class="brand-text">文献综述图谱</div>
+      <div class="brand-sub">推荐曝光 · 结构外部性 · 受约束治理</div>
+    </div>
+  </a>
+
+  <div class="search">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input id="searchInput" type="text" placeholder="搜索节点…"/>
+  </div>
+
+  <div class="sep"></div>
+
+  <button class="tbtn" id="btnExpand" title="展开全部">
+    <svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+    <span>展开</span>
+  </button>
+  <button class="tbtn" id="btnCollapse" title="收起">
+    <svg viewBox="0 0 24 24"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+    <span>收起</span>
+  </button>
+
+  <div class="sep"></div>
+
+  <button class="tbtn tbtn-icon" id="btnZoomIn" title="放大">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+  </button>
+  <button class="tbtn tbtn-icon" id="btnZoomOut" title="缩小">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+  </button>
+  <button class="tbtn tbtn-icon" id="btnFit" title="适配画面">
+    <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+  </button>
+
+  <div class="sep"></div>
+
+  <button class="tbtn tbtn-icon" id="btnDark" title="主题切换">
+    <svg id="iconSun" viewBox="0 0 24 24" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    <svg id="iconMoon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+  </button>
+  <button class="tbtn tbtn-icon" id="btnFS" title="全屏">
+    <svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+  </button>
+</div>
+
+<!-- ── 思维导图 ── -->
+<div class="markmap">
+<script type="text/template">
+---
+markmap:
+  initialExpandLevel: 2
+  maxWidth: 380
+  colorFreezeLevel: 3
+---
+
+# 推荐曝光、结构外部性与受约束治理：扩展文献综述
+
+## 一、总体框架 <!-- markmap: fold -->
+### 核心命题
+- 推荐系统 = 持续分配可见性的制度性装置
+- Diaz (2024): **推荐即信息分配** *(Foundations & Trends in IR)*
+- 局部曝光结构 → 可审计的结构外部性
+### 五条研究线索
+- 🔴 回音室与过滤气泡 → 对象澄清
+- 🟠 平台实验与因果识别 → 证据标准
+- 🟡 高阶网络与方向性工具 → 分析语言
+- 🟢 曝光公平与多侧推荐 → 资源分配视角
+- 🔵 反事实评估与离策略学习 → 评估方法
+### 核心问题
+- 哪些局部结构值得审计？
+- 哪些动作可在可问责约束下执行？
+- 如何独立评估这些动作？
+
+## 二、回音室、过滤气泡与测量对象 <!-- markmap: fold -->
+### 2.1 规范性忧虑 → 经验测量
+- Sunstein (2001/2017): 信息茧房与公共讨论碎片化
+- Pariser (2011): 算法过滤气泡概念
+- Bruns (2019): **概念批评** — 过滤气泡被过度简化使用
+- Arguedas et al. (2022): 路透研究所系统综述 — 证据不一致
+- **对象混淆**：连接同质性 ≠ 暴露隔离 ≠ 内容偏向 ≠ 态度极化
+### 2.2 观察性研究分解暴露与选择
+- Garrett (2009): 动机性选择暴露 — 政治倾向驱动
+- Barberá (2015): **贝叶斯理想点估计** *(Political Analysis)* — 行为推断意识形态
+- Flaxman, Goel & Rao (2016): 搜索/社交路径扩大暴露多样性
+- **关键区分**：结构变量 vs 态度变量 vs 行为变量
+### 2.3 深读 Bakshy et al. (2015, *Science*)
+- 1010万 Facebook 用户 · 对象 = 跨意识形态暴露比例
+- 发现：用户自身选择 > 算法排序的封闭效应
+- 后果：结构性可见性受控于平台与个体的双重机制
+### 2.4 深读 Cinelli et al. (2021, *PNAS*)
+- 跨平台（Facebook/Reddit/Twitter/Gab）比较
+- 发现：平台架构本身决定回音室程度
+- 后果：同一算法变化在不同平台效果迥异
+### 2.5 概念重访与批判
+- Dubois & Blank (2018): 多元媒体使用者不在气泡中
+- Geschke, Lorenz & Holtz (2019): 三重过滤气泡 ABM 框架
+- Bruns (2019): 概念已偏离学术精度 → 需操作化重建
+### 2.6 小结
+- "回音室"不是稳定的单一变量
+- 连接同质性↓ ≠ 暴露封闭↓ ≠ 情感极化↓
+- 结构风险诊断必须明确锚定对象
+
+## 三、真实平台实验与因果识别 <!-- markmap: fold -->
+### 3.1 实地实验浪潮
+- 2020 美国大选 Facebook/Instagram 联合研究项目
+- 信息流替代实验 · 重排序效应 · 态度追踪
+### 3.2 非单调效应的关键证据
+- **Bail et al. (2018, *PNAS*)**: 跨阵营暴露 → 共和党人态度更保守
+  - 结论：增加异质暴露可能适得其反
+- **Levy (2021, *AER*)**: 跨阵营新闻订阅 → 知识↑ 但态度极化变化极小
+  - 结论：暴露→知识路径可行，暴露→态度衰减严重
+- 共同约束：暴露结构可操作，但暴露改变→态度改变存在非单调衰减
+### 3.3 深读 Nyhan et al. (2023, *Nature*)
+- 降低同阵营暴露约 1/3
+- 八项政治态度指标无显著变化
+- 后果：暴露结构 ≠ 结果变量的替身
+### 3.4 深读 Hosseinmardi et al. (2024, *PNAS*)
+- 反事实机器人设计 → 分离用户偏好与算法效应
+- YouTube 推荐的因果边际影响
+- 后果：推荐曝光是独立可识别对象
+### 3.5 更多平台证据
+- González-Bailón et al. (2023, *Science*): 暴露隔离的不对称性
+- Guess et al. (2023, *Science*): 算法→时间序信息流 — 结构变但态度不变
+- Piccardi et al. (2025): 无需平台合作的实时重排实验
+- Gauthier et al. (2026, *Nature*): X 平台实地实验 — 效应高度路径依赖
+- Tokita, Guess & Tarnita (2021, *PNAS*): 意见放大重组社交网络
+### 3.6 小结
+- ✅ 暴露是独立可操作对象
+- ⚠️ 结构改变 ≠ 态度自动改善
+- ❌ "增加异质暴露 = 解决问题" 过度简化
+- 💡 任何干预需独立检验结果变量
+
+## 四、高阶网络与方向性感知工具 <!-- markmap: fold -->
+### 4.1 为何成对平均量不够
+- Battiston et al. (2020, *Physics Reports*): 超越成对交互
+- Bick et al. (2023, *SIAM Review*): 高阶网络定义
+- Torres et al. (2021, *SIAM Review*): 表示选择决定可见现象
+- **Benson et al. (2018)**: 单纯闭包 — 高阶预测 > 成对预测
+### 4.2 Hodge 理论与局部环流分离
+- Eckmann (1945): 离散 Hodge 基础
+- Jiang et al. (2011): **HodgeRank** — 局部循环可分离
+- Lim (2020, *SIAM Review*): Hodge Laplacians 理论体系
+- Schaub et al. (2020, *SIAM Review*): 归一化 Hodge 1-Laplacian
+### 4.3 方向性工具
+- Singer & Wu (2012): 向量扩散映射 · connection Laplacian
+- Fanuel et al. (2017): 磁性特征映射 → 有向社区检测
+- Barbarossa & Sardellitti (2020, *IEEE TSP*): 拓扑信号处理
+### 4.4 有向高阶前沿
+- Higher-order Connection Laplacians (2024)
+- **Neuhäuser et al. (2020)**: 多体交互 → 独特共识/极化动力学
+- connection/Hodge 在高阶结构上分离局部环流
+### 4.5 深读 Jiang et al. (2011) 与 Gong et al. (2024)
+- HodgeRank: 统计排名 → 一致/局部循环/调和分解
+- Gong et al.: 高阶 Laplacian → 生存模型/结构诊断
+### 4.6 小结
+- connection phase → 编码曝光失衡
+- Hodge 分解 → 提取局部回流
+- 这些是分析工具，不是论文主创新
+
+## 五、曝光公平、多侧推荐与动态偏差 <!-- markmap: fold -->
+### 5.1 奠基文献
+- **Zehlike et al. (2017)**: FA*IR — 约束式公平 top-k 排名先驱
+- Singh & Joachims (2018): 曝光建模为注意力分配
+- Biega et al. (2018): 注意力公平 — 可摊销资源
+- **Diaz (2024)**: 推荐 = 信息分配 → 公平 = 分配正义
+### 5.2 多侧公平
+- **Patro et al. (2020)**: FairRec — 消费者+生产者双侧公平
+- Wu et al. (2022): 联合多侧曝光公平
+- Chen et al. (2024): 多侧在线公平 + 不确定反馈
+- Shafiloo et al. (2026): 消费者/提供者/项目三侧公平
+### 5.3 深读 Diaz et al. (2020) 与 Wu et al. (2022)
+- Diaz: 期望曝光 — 分布化方式评价
+- Wu: 系统性曝光偏差 → 社会伤害的正式连接
+### 5.4 动态偏差
+- Mansoury & Mobasher (2023): 静态方法在长期反馈中失效
+- Yoo et al. (2024): 公平差距随时间扩大
+### 5.5 小结
+- "被看见" = 可分配资源
+- 结构外部性 ⊃ 曝光公平（不能互相吞并）
+- 公平回答"谁获得多少"，结构外部性还回答"局部如何组织"
+
+## 六、反事实评估与离策略学习 <!-- markmap: fold -->
+### 6.1 奠基文献
+- **Joachims et al. (2017)**: 无偏排序学习 *(WSDM)* — 开创子领域
+- **Saito & Joachims (2022)**: 大动作空间 OPE *(ICML)* — embedding 降维
+### 6.2 日志数据基础设施
+- MIND (Wu et al. 2020): 新闻 impression 级日志
+- FINN.no Slates (Ie et al. 2023): 请求-展示列表层级
+- KuaiRand (Gao et al. 2022): 随机曝光日志
+### 6.3 深读 FINN.no Slates 与 KuaiRand
+- Slate = 整页推荐列表 → 动作空间是列表空间
+- KuaiRand: 随机分配曝光 → 天然的无偏评估基准
+### 6.4 离策略学习与估计
+- IPS / DM / DR 三族估计器
+- Swaminathan & Joachims (2015): 对数策略学习
+- Buchholz et al. (2022): 意识形态光谱上的再排序
+### 6.5 小结
+- 评价层必须同时报告：结构外部性 + 效用 + 公平 + 代价 + 不确定性
+- 请求-展示列表层级动作空间是未来方向
+
+## 七、综合比较与研究空白 <!-- markmap: fold -->
+### 六大研究空白
+- **Gap 1**: 对象层 — 推荐曝光网络仍缺统一操作化定义
+- **Gap 2**: 高阶方向性 — connection 工具尚未应用于推荐外部性
+- **Gap 3**: 诊断层 — 缺校准到独立不利结果的风险诊断器
+- **Gap 4**: 动作层 — 需从聚合边扰动升级到列表级重排序
+- **Gap 5**: 评估层 — 缺整合结构+效用+公平+代价的统一评估
+- **Gap 6**: 治理层 — 缺可部署的审计制度链条 (Raji et al. 2020)
+### 六项写作约束
+- 1️⃣ 锚定曝光分配，不泛化为"回音室"
+- 2️⃣ 结构风险 = 审计信号 ≠ 态度结果替身
+- 3️⃣ 诊断层 → 校准模型（非手工固定权重）
+- 4️⃣ 动作层 → 列表级重排序
+- 5️⃣ 评估层 → 多维同时报告
+- 6️⃣ 证据链 → 真实日志主评 + 仿真隔离 + 旧回放附证
+
+## 八、结论 <!-- markmap: fold -->
+### 研究重心转移
+- "找出相关内容" → "平台如何持续分配可见性"
+- Diaz (2024): 分配视角的统一入口
+### 论文成立条件
+- 对象 = 曝光分配的结构问题
+- 边界 = 结构风险是中层审计对象 (Raji et al. 2020)
+- 方法 = 列表级动作空间 + 分层证据设计
+### 暴露→态度的衰减约束
+- Bail (2018): 增加异质暴露可能反效果
+- Levy (2021): 暴露→知识可行，→态度衰减严重
+- 任何干预方案不可默认"更多跨群暴露 = 更好结果"
+
+
+</script>
+</div>
+
+<!-- ── 统计 ── -->
+<div class="stats">
+  <div class="stat"><span class="stat-dot"></span><span id="sNodes">–</span></div>
+  <div class="stat"><span class="stat-dot"></span><span id="sDepth">–</span></div>
+</div>
+
+<!-- ── markmap autoloader ── -->
+<script src="https://cdn.jsdelivr.net/npm/markmap-autoloader@latest"></script>
+
+<script>
+(() => {
+  /* ── 等待 markmap 渲染完成 ── */
+  const waitForMM = (cb, tries = 0) => {
+    /* autoloader 在 .markmap 的子 SVG 上挂载实例 */
+    const el = document.querySelector('.markmap');
+    const svg = el && el.querySelector('svg');
+    const mm = svg && (svg.markmap || svg.__markmap__);
+    /* 也检查全局 */
+    const mmGlobal = window.markmap;
+    if (mm && mm.state && mm.state.data) {
+      cb(mm, svg); return;
+    }
+    /* 备选：检查 SVG 是否已有子元素（渲染完成标志） */
+    if (svg && svg.querySelector('g') && svg.querySelector('g').children.length > 2) {
+      /* 无直接实例引用，用轮询 DOM 操作替代 */
+      cb(null, svg); return;
+    }
+    if (tries < 100) setTimeout(() => waitForMM(cb, tries + 1), 200);
+  };
+
+  waitForMM((mm, svg) => {
+    if (!mm) {
+      /* 没有获取到实例引用，按钮暂不绑定 */
+      console.log('Markmap rendered but instance not accessible');
+      return;
+    }
+
+    /* ── 统计 ── */
+    let nc = 0, md = 0;
+    const walk = (n, d) => { nc++; if (d > md) md = d; (n.children||[]).forEach(c => walk(c, d+1)); };
+    if (mm.state && mm.state.data) walk(mm.state.data, 0);
+    document.getElementById('sNodes').textContent = nc + ' 节点';
+    document.getElementById('sDepth').textContent = md + ' 层';
+
+    /* ── 克隆树 + 遍历 ── */
+    const cloneTree = (n) => ({ ...n, payload: n.payload ? { ...n.payload } : {}, children: (n.children||[]).map(cloneTree) });
+    const walkSet = (n, d, fn) => { fn(n, d); (n.children||[]).forEach(c => walkSet(c, d+1, fn)); };
+
+    /* ── 展开/收起 ── */
+    document.getElementById('btnExpand').addEventListener('click', async () => {
+      const r = cloneTree(mm.state.data);
+      walkSet(r, 0, (n) => { n.payload = { ...(n.payload||{}), fold: 0 }; });
+      await mm.setData(r); await mm.fit();
+    });
+    document.getElementById('btnCollapse').addEventListener('click', async () => {
+      const r = cloneTree(mm.state.data);
+      walkSet(r, 0, (n, d) => { n.payload = { ...(n.payload||{}), fold: d >= 2 ? 1 : 0 }; });
+      await mm.setData(r); await mm.fit();
+    });
+
+    /* ── 缩放 ── */
+    document.getElementById('btnZoomIn').addEventListener('click', () => {
+      mm.rescale(1.25);
+    });
+    document.getElementById('btnZoomOut').addEventListener('click', () => {
+      mm.rescale(0.8);
+    });
+    document.getElementById('btnFit').addEventListener('click', () => {
+      mm.fit();
+    });
+
+    /* ── 搜索 ── */
+    let timer;
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const q = e.target.value.trim().toLowerCase();
+        svg.querySelectorAll('text').forEach(t => {
+          const match = q && t.textContent.toLowerCase().includes(q);
+          t.style.fill = match ? 'var(--g-from)' : '';
+          t.style.fontWeight = match ? '800' : '';
+          t.style.fontSize = match ? '1.1em' : '';
+        });
+      }, 200);
+    });
+  });
+
+  /* ── 深色模式 ── */
+  const apply = (dark) => {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    document.getElementById('iconSun').style.display = dark ? 'block' : 'none';
+    document.getElementById('iconMoon').style.display = dark ? 'none' : 'block';
+    localStorage.setItem('mm-theme', dark ? 'dark' : 'light');
+  };
+  const saved = localStorage.getItem('mm-theme');
+  apply(saved === 'dark' || (!saved && matchMedia('(prefers-color-scheme:dark)').matches));
+  document.getElementById('btnDark').addEventListener('click', () => {
+    apply(document.documentElement.getAttribute('data-theme') !== 'dark');
+  });
+
+  /* ── 全屏 ── */
+  document.getElementById('btnFS').addEventListener('click', () => {
+    document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+  });
+})();
+</script>
+</body>
+</html>
