@@ -1,42 +1,53 @@
-# 05_思维导图
+# mindmap
 
-交互式 Markmap 思维导图，涵盖文献综述图谱与最新版论文研究图谱。
+交互式 Markmap 思维导图，包含文献综述图谱和研究路线图谱。
 
-**在线预览**: [https://2711944586.github.io/mindmap/](https://2711944586.github.io/mindmap/)
+## 在线地址
 
-## 文件说明
+- 导航页: `https://2711944586.github.io/mindmap/`
+- 文献综述导图: `https://2711944586.github.io/mindmap/literature_review.html`
+- 研究路线导图: `https://2711944586.github.io/mindmap/research_journey.html`
 
-| 文件 | 用途 |
-| --- | --- |
-| `literature_review.mm.md` | 文献综述图谱源文件 — 76 篇文献按六条研究线索组织 |
-| `research_journey.mm.md` | 研究图谱源文件 — 对象层、三组件框架、理论边界与评估协议 |
-| `render_markmap.py` | 渲染脚本 — 从 `.mm.md` 生成 HTML（纯 Python，无第三方依赖） |
-| `index.html` | 着陆页 — 导航到两个思维导图 |
-| `literature_review.html` | 文献综述图谱（可直接浏览器打开） |
-| `research_journey.html` | 研究思考图谱（可直接浏览器打开） |
+## 文件
 
-## 功能特性
+- `literature_review.mm.md`: 文献综述导图源文件
+- `research_journey.mm.md`: 研究路线导图源文件
+- `render_markmap.py`: 渲染脚本
+- `index.html`: 导航页
 
-- 🔍 **节点搜索** — 顶栏输入关键词实时高亮
-- 📂 **展开与恢复初始** — 支持一键展开全部，并恢复到最初折叠状态
-- 🌗 **主题切换** — 支持亮色 / 暗色模式切换
-- 📊 **节点/层深统计** — 左下角实时显示
-- 🖨️ **打印优化** — 自动隐藏控件
-- 📱 **响应式布局** — 顶部控制栏在窄屏下自动收束，避免首页与工具栏重叠
+## 本地更新
 
-## 更新命令
-
-```bash
-python render_markmap.py          # 生成全部 HTML
-python render_markmap.py --serve  # 生成并启动本地预览 (http://localhost:8080)
+```powershell
+python render_markmap.py
 ```
 
-## 部署
+需要本地预览时：
 
-通过 GitHub Actions 自动部署到 GitHub Pages，推送到 `main` 分支即触发。
+```powershell
+python render_markmap.py --serve
+```
+
+默认地址: `http://localhost:8080/`
+
+## 静态部署
+
+工作流文件: `.github/workflows/deploy-mindmap.yml`
+
+```powershell
+python render_markmap.py
+git add .
+git commit -m "Update mindmap"
+git push origin main
+```
+
+推送后：
+
+1. 打开 `https://github.com/2711944586/mindmap/actions`
+2. 等待部署工作流完成
+3. 打开上面的 Pages 地址
 
 ## 当前内容
 
-1. `literature_review` 保持参考文献导图主线。
-2. `research_journey` 已同步最新论文原稿，围绕对象层、机制层、评估层更新研究图谱。
-3. 目录本身就是部署根目录，可直接初始化并推送到 `2711944586/mindmap`。
+1. `literature_review.html` 用于综述图谱展示。
+2. `research_journey.html` 用于论文研究路线、对象层、方法链和评估边界展示。
+3. 页面支持搜索、主题切换、展开全部和恢复初始状态。
