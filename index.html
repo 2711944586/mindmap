@@ -4,235 +4,58 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>推荐曝光结构外部性研究导图</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet"/>
 <style>
-:root {
-  --bg: #efe5d5;
-  --bg-deep: #f7f1e8;
-  --surface: rgba(255, 252, 247, 0.9);
-  --line: rgba(75, 56, 38, 0.12);
-  --text: #22170f;
-  --text-soft: #6e5d4c;
-  --shadow: 0 20px 56px rgba(53, 37, 20, 0.12);
-  --sans: "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
-  --serif: "Fraunces", "Noto Serif SC", serif;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI","Noto Sans SC",sans-serif;
+  background:#fafaf9;color:#1c1917;min-height:100vh;
+  display:flex;align-items:center;justify-content:center;padding:48px 24px
 }
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #141a1f;
-    --bg-deep: #1c252b;
-    --surface: rgba(24, 31, 37, 0.9);
-    --line: rgba(184, 206, 212, 0.12);
-    --text: #e6ecef;
-    --text-soft: #a9b8be;
-    --shadow: 0 20px 56px rgba(0, 0, 0, 0.34);
-  }
+@media(prefers-color-scheme:dark){
+  body{background:#18181b;color:#e7e5e4}
+  .card{background:#1c1c1e;border-color:rgba(255,255,255,.06)}
+  .card:hover{box-shadow:0 2px 8px rgba(0,0,0,.3)}
 }
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
+.w{max-width:520px;width:100%}
+h1{font-size:1.7rem;font-weight:800;letter-spacing:-.03em;margin-bottom:6px}
+.sub{font-size:.82rem;opacity:.48;margin-bottom:34px;font-weight:500;line-height:1.6}
+.cards{display:flex;flex-direction:column;gap:10px}
+.card{
+  display:flex;align-items:center;gap:14px;padding:16px 20px;
+  border:1px solid rgba(0,0,0,.06);border-radius:14px;background:#fff;
+  text-decoration:none;color:inherit;transition:transform .15s,box-shadow .15s;
+  box-shadow:0 1px 2px rgba(0,0,0,.03)
 }
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  color: var(--text);
-  background:
-    radial-gradient(circle at 16% 14%, rgba(154, 93, 47, 0.18), transparent 24%),
-    radial-gradient(circle at 84% 18%, rgba(33, 95, 90, 0.18), transparent 24%),
-    linear-gradient(180deg, var(--bg-deep) 0%, var(--bg) 100%);
-  font-family: var(--sans);
+.card:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.06)}
+.ci{font-size:22px;flex-shrink:0}
+.ct{font-size:.95rem;font-weight:700;margin-bottom:3px}
+.cd{font-size:.78rem;opacity:.48;line-height:1.5}
+.ca{
+  width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;
+  margin-left:auto;opacity:.12;flex-shrink:0;transition:opacity .15s
 }
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
-  background-size: 42px 42px;
-  opacity: 0.14;
-  pointer-events: none;
-}
-
-.shell {
-  position: relative;
-  z-index: 1;
-  width: min(760px, 100%);
-}
-
-.hero {
-  margin-bottom: 26px;
-}
-
-.kicker {
-  font: 700 11px/1 var(--sans);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-soft);
-  margin-bottom: 10px;
-}
-
-h1 {
-  margin: 0 0 10px;
-  font: 700 clamp(2rem, 5vw, 3.5rem)/0.95 var(--serif);
-  letter-spacing: -0.04em;
-}
-
-.lead {
-  max-width: 620px;
-  color: var(--text-soft);
-  font: 600 14px/1.7 var(--sans);
-}
-
-.cards {
-  display: grid;
-  gap: 14px;
-}
-
-.card {
-  display: grid;
-  grid-template-columns: 76px 1fr 30px;
-  align-items: center;
-  gap: 16px;
-  padding: 18px 18px;
-  border-radius: 22px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  color: inherit;
-  text-decoration: none;
-  transition: transform .14s ease, border-color .14s ease, background .14s ease;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-}
-
-.chip {
-  height: 52px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fffaf2;
-  font: 800 18px/1 var(--sans);
-  letter-spacing: 0.08em;
-  border: 1px solid rgba(255,255,255,0.22);
-}
-
-.card-copy {
-  min-width: 0;
-}
-
-.card-label {
-  font: 700 11px/1 var(--sans);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-soft);
-  margin-bottom: 6px;
-}
-
-.card-title {
-  font: 700 24px/1.08 var(--serif);
-  letter-spacing: -0.03em;
-  margin-bottom: 6px;
-}
-
-.card-subtitle {
-  color: var(--text-soft);
-  font: 600 13px/1.6 var(--sans);
-}
-
-.arrow {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--line);
-}
-
-.arrow svg {
-  width: 14px;
-  height: 14px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-}
-
-.footer {
-  margin-top: 18px;
-  color: var(--text-soft);
-  font: 700 11px/1.5 var(--sans);
-}
-
-.footer a {
-  color: inherit;
-}
-
-@media (max-width: 640px) {
-  .card {
-    grid-template-columns: 62px 1fr;
-  }
-
-  .arrow {
-    display: none;
-  }
-
-  .card-title {
-    font-size: 20px;
-  }
-}
+.card:hover .ca{opacity:.4}
+.ft{margin-top:22px;text-align:center;font-size:.72rem;opacity:.28;font-weight:500}
+.ft a{color:inherit}
 </style>
 </head>
 <body>
-<main class="shell">
-  <section class="hero">
-    <div class="kicker">Interactive Atlas</div>
-    <h1>推荐曝光结构外部性研究导图</h1>
-    <div class="lead">保留更克制的首页结构与更轻的页面负担，分别进入文献综述图谱和最新论文的 research journey 图谱。</div>
-  </section>
-
-  <section class="cards">
+<div class="w">
+  <h1>推荐曝光结构外部性研究导图</h1>
+  <p class="sub">分别进入文献综述图谱与研究思考图谱。保持更轻的首页结构，避免卡片重叠和过度装饰。</p>
+  <div class="cards">
     <a class="card" href="literature_review.html">
-  <div class="chip" style="background: linear-gradient(135deg, #9a5d2f, #d0b38f);">01</div>
-  <div class="card-copy">
-    <div class="card-label">Literature Map</div>
-    <div class="card-title">文献综述图谱</div>
-    <div class="card-subtitle">推荐曝光 · 结构外部性 · 证据与治理</div>
-  </div>
-  <div class="arrow">
-    <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-  </div>
+  <span class="ci">📚</span>
+  <div><div class="ct">文献综述图谱</div><div class="cd">推荐曝光 · 结构外部性 · 受约束治理</div></div>
+  <svg class="ca" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
 </a>
-
 <a class="card" href="research_journey.html">
-  <div class="chip" style="background: linear-gradient(135deg, #215f5a, #93bdb6);">02</div>
-  <div class="card-copy">
-    <div class="card-label">Research Journey</div>
-    <div class="card-title">研究思考图谱</div>
-    <div class="card-subtitle">对象层次 · 三组件框架 · 评估协议 · 边界</div>
-  </div>
-  <div class="arrow">
-    <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-  </div>
+  <span class="ci">🧭</span>
+  <div><div class="ct">研究思考图谱</div><div class="cd">对象层次 · 三组件框架 · 评估协议 · 解释边界</div></div>
+  <svg class="ca" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
 </a>
-
-  </section>
-
-  <div class="footer">基于 <a href="https://markmap.js.org/" target="_blank">Markmap</a> 构建 · 仓库：<a href="https://github.com/2711944586/mindmap" target="_blank">2711944586/mindmap</a></div>
-</main>
+  </div>
+  <p class="ft">基于 <a href="https://markmap.js.org/">Markmap</a> · <a href="https://github.com/2711944586/mindmap">GitHub</a></p>
+</div>
 </body>
 </html>

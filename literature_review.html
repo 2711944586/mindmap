@@ -4,587 +4,200 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>文献综述图谱</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet"/>
 <style>
-:root {
-  --bg: #efe4d2;
-  --bg-deep: #f7f1e7;
-  --surface: rgba(252, 249, 243, 0.88);
-  --surface-strong: rgba(255, 253, 249, 0.94);
-  --line: rgba(70, 49, 31, 0.14);
-  --text: #23180f;
-  --text-soft: #685a4b;
-  --shadow: 0 18px 50px rgba(49, 34, 19, 0.12);
-  --chip: #9a5d2f;
-  --chip-soft: #d0b38f;
-  --node-0: #2b2117;
-  --node-1: #7c4f29;
-  --node-2: #8f6c45;
-  --node-3: #4f6454;
-  --node-4: #49606e;
-  --ui-font: "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
-  --map-font: "Fraunces", "Noto Serif SC", "Source Han Serif SC", serif;
-  --match: #b56d32;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans SC",sans-serif}
+body{background:#fafaf9;color:#1c1917;transition:background .15s,color .15s}
+body.dark{background:#18181b;color:#e7e5e4}
+
+svg#mm{position:fixed;inset:0;width:100%;height:100%}
+
+svg#mm text{
+  font-family:system-ui,-apple-system,"Segoe UI","Noto Sans SC",sans-serif !important;
+  font-size:13px !important;
 }
+body.dark svg#mm text{fill:#d4d4d8 !important}
 
-html[data-theme="nocturne"] {
-  --bg: #12181d;
-  --bg-deep: #1b242a;
-  --surface: rgba(19, 26, 31, 0.82);
-  --surface-strong: rgba(24, 31, 37, 0.9);
-  --line: rgba(184, 206, 212, 0.16);
-  --text: #e5ecef;
-  --text-soft: #a9b8be;
-  --shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
-  --chip: #d0b38f;
-  --chip-soft: #9a5d2f;
-  --node-0: #edf3f5;
-  --node-1: #a9d1ca;
-  --node-2: #d5bea0;
-  --node-3: #b6c2d4;
-  --node-4: #d5d1ca;
-  --ui-font: "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
-  --map-font: "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
-  --match: #f1c28b;
+.bar{
+  position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:999;
+  display:inline-flex;align-items:center;gap:2px;padding:5px 10px;
+  background:rgba(250,250,249,.88);border:1px solid rgba(0,0,0,.07);
+  border-radius:10px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  box-shadow:0 1px 3px rgba(0,0,0,.04)
 }
+body.dark .bar{background:rgba(24,24,27,.88);border-color:rgba(255,255,255,.07)}
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
+.bar a.home{
+  display:flex;align-items:center;gap:5px;padding:0 8px 0 4px;
+  margin-right:6px;border-right:1px solid rgba(0,0,0,.06);
+  text-decoration:none;color:inherit;font-size:12px;font-weight:600
 }
+body.dark .bar a.home{border-right-color:rgba(255,255,255,.06)}
+.bar .dot{width:6px;height:6px;border-radius:50%;background:#4338ca}
 
-html,
-body {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
+.b{
+  display:inline-flex;align-items:center;gap:3px;height:28px;min-width:28px;
+  padding:0 8px;border:none;border-radius:7px;background:transparent;
+  color:inherit;font:600 11px/1 system-ui,sans-serif;cursor:pointer;transition:background .12s
 }
+.b:hover{background:rgba(0,0,0,.05)}
+body.dark .b:hover{background:rgba(255,255,255,.08)}
+.b:active{opacity:.7}
+.b svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.b.ico{padding:0;width:28px;justify-content:center}
 
-body {
-  margin: 0;
-  color: var(--text);
-  font-family: var(--ui-font);
-  background:
-    radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--chip-soft) 24%, transparent), transparent 28%),
-    radial-gradient(circle at 92% 16%, color-mix(in srgb, var(--chip) 14%, transparent), transparent 24%),
-    linear-gradient(180deg, var(--bg-deep) 0%, var(--bg) 100%);
+.sep{width:1px;height:14px;background:rgba(0,0,0,.06);margin:0 3px}
+body.dark .sep{background:rgba(255,255,255,.06)}
+
+.sf{
+  display:flex;align-items:center;gap:4px;height:28px;padding:0 8px;
+  border:1px solid rgba(0,0,0,.06);border-radius:7px;transition:border-color .15s
 }
+body.dark .sf{border-color:rgba(255,255,255,.06)}
+.sf:focus-within{border-color:#4338ca}
+.sf svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:1.5;opacity:.3}
+.sf input{border:none;outline:none;font:11px system-ui;color:inherit;width:80px;background:transparent}
+body.dark .sf input{color:#e7e5e4}
 
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
-  background-size: 40px 40px;
-  opacity: 0.16;
-  pointer-events: none;
+.badge{position:fixed;bottom:12px;left:12px;z-index:999;display:flex;gap:4px}
+.badge span{
+  padding:2px 8px;border-radius:6px;font:600 10px/1.6 system-ui;
+  background:rgba(250,250,249,.85);border:1px solid rgba(0,0,0,.06);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)
 }
+body.dark .badge span{background:rgba(24,24,27,.85);border-color:rgba(255,255,255,.06)}
 
-#mindmap {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
+.mm-hl{fill:#4338ca !important;font-weight:700 !important}
+
+@media(max-width:640px){
+  .bar{top:6px;padding:4px 6px;gap:1px;max-width:calc(100vw - 12px);flex-wrap:wrap;justify-content:center}
+  .bar a.home{display:none}
+  .b span{display:none}
+  .sf input{width:50px}
 }
-
-#mindmap svg {
-  width: 100%;
-  height: 100%;
-}
-
-.dock {
-  position: fixed;
-  top: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 20;
-  width: min(1100px, calc(100vw - 24px));
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--surface);
-  backdrop-filter: blur(18px) saturate(1.05);
-  -webkit-backdrop-filter: blur(18px) saturate(1.05);
-  box-shadow: var(--shadow);
-}
-
-.brand {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.brand-mark {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--chip) 30%, var(--line));
-  background: linear-gradient(135deg, color-mix(in srgb, var(--chip) 92%, white 8%), color-mix(in srgb, var(--chip-soft) 78%, white 22%));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fffaf2;
-  font: 800 12px/1 var(--ui-font);
-  letter-spacing: 0.06em;
-}
-
-.brand-copy {
-  min-width: 0;
-}
-
-.brand-label {
-  font: 700 11px/1 var(--ui-font);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-soft);
-  margin-bottom: 5px;
-}
-
-.brand-title {
-  font: 700 18px/1.1 var(--map-font);
-  letter-spacing: -0.02em;
-}
-
-.brand-subtitle {
-  font: 600 11px/1.35 var(--ui-font);
-  color: var(--text-soft);
-  margin-top: 4px;
-}
-
-.controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.search-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 38px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--surface-strong) 92%, transparent);
-}
-
-.search-box svg,
-.tool-btn svg {
-  width: 15px;
-  height: 15px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.search-box input {
-  width: 120px;
-  border: 0;
-  outline: none;
-  padding: 0;
-  background: transparent;
-  color: var(--text);
-  font: 600 12px/1 var(--ui-font);
-}
-
-.search-box input::placeholder {
-  color: color-mix(in srgb, var(--text-soft) 80%, white 20%);
-}
-
-.tool-btn {
-  height: 38px;
-  min-width: 38px;
-  padding: 0 14px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-strong) 90%, transparent);
-  color: var(--text);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font: 700 12px/1 var(--ui-font);
-  transition: transform .14s ease, background .14s ease, border-color .14s ease;
-}
-
-.tool-btn:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--chip) 42%, var(--line));
-  background: color-mix(in srgb, var(--chip-soft) 18%, var(--surface-strong));
-}
-
-.tool-btn:active {
-  transform: translateY(0);
-}
-
-.tool-btn.compact {
-  padding: 0;
-  width: 38px;
-}
-
-.theme-btn .theme-name {
-  display: inline-block;
-  min-width: 62px;
-  text-align: left;
-}
-
-.status-panel {
-  position: fixed;
-  left: 18px;
-  bottom: 18px;
-  z-index: 20;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.status-pill {
-  min-height: 34px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: var(--shadow);
-  color: var(--text-soft);
-  font: 700 11px/1 var(--ui-font);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--chip), var(--chip-soft));
-}
-
-.theme-note {
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  z-index: 20;
-  max-width: min(280px, calc(100vw - 36px));
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: var(--shadow);
-}
-
-.theme-note .theme-note-title {
-  font: 700 11px/1 var(--ui-font);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-soft);
-  margin-bottom: 6px;
-}
-
-.theme-note .theme-note-body {
-  font: 700 13px/1.45 var(--map-font);
-}
-
-.markmap-node > circle {
-  stroke: color-mix(in srgb, var(--chip) 34%, var(--line));
-  stroke-width: 1.25px;
-}
-
-.markmap-node text {
-  font-family: var(--map-font) !important;
-  letter-spacing: 0.01em;
-}
-
-.mm-match {
-  fill: var(--match) !important;
-  font-weight: 800 !important;
-}
-
-@media (max-width: 900px) {
-  .dock {
-    top: 12px;
-    padding: 10px;
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .brand {
-    width: 100%;
-  }
-
-  .controls {
-    width: 100%;
-    justify-content: flex-start;
-  }
-}
-
-@media (max-width: 640px) {
-  .brand-title {
-    font-size: 16px;
-  }
-
-  .brand-subtitle {
-    display: none;
-  }
-
-  .search-box input {
-    width: 88px;
-  }
-
-  .tool-btn span {
-    display: none;
-  }
-
-  .theme-btn .theme-name {
-    display: none;
-  }
-
-  .theme-note {
-    display: none;
-  }
-}
-
-@media print {
-  .dock,
-  .status-panel,
-  .theme-note {
-    display: none !important;
-  }
-
-  body::before {
-    display: none;
-  }
-}
+@media print{.bar,.badge{display:none !important}}
 </style>
 </head>
 <body>
-<div id="mindmap"></div>
 
-<section class="dock">
-  <div class="brand">
-    <div class="brand-mark">01</div>
-    <div class="brand-copy">
-      <div class="brand-label">Literature Map</div>
-      <div class="brand-title">文献综述图谱</div>
-      <div class="brand-subtitle">推荐曝光 · 结构外部性 · 证据与治理</div>
-    </div>
-  </div>
+<div class="bar">
+  <a class="home" href="index.html"><span class="dot"></span>文献综述图谱</a>
+  <div class="sf"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="si" placeholder="搜索…"/></div>
+  <div class="sep"></div>
+  <button class="b" id="bE"><svg viewBox="0 0 24 24"><polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/></svg><span>展开</span></button>
+  <button class="b" id="bC"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 3 3 9 9 9"/></svg><span>恢复</span></button>
+  <div class="sep"></div>
+  <button class="b ico" id="bZI" title="放大"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="21" y1="21" x2="15.5" y2="15.5"/><line x1="10.5" y1="7.5" x2="10.5" y2="13.5"/><line x1="7.5" y1="10.5" x2="13.5" y2="10.5"/></svg></button>
+  <button class="b ico" id="bZO" title="缩小"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="21" y1="21" x2="15.5" y2="15.5"/><line x1="7.5" y1="10.5" x2="13.5" y2="10.5"/></svg></button>
+  <button class="b ico" id="bF0" title="适配"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg></button>
+  <div class="sep"></div>
+  <button class="b ico" id="bD" title="切换主题"><svg id="iS" viewBox="0 0 24 24" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg><svg id="iM" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></button>
+  <button class="b ico" id="bFS" title="全屏"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg></button>
+</div>
 
-  <div class="controls">
-    <label class="search-box" for="searchInput" title="搜索节点">
-      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.65" y1="16.65" x2="21" y2="21"/></svg>
-      <input id="searchInput" type="text" placeholder="搜索节点"/>
-    </label>
+<svg id="mm"></svg>
 
-    <button class="tool-btn" id="expandBtn" title="展开全部">
-      <svg viewBox="0 0 24 24"><polyline points="7 10 12 15 17 10"/><polyline points="7 4 12 9 17 4"/></svg>
-      <span>展开全部</span>
-    </button>
-
-    <button class="tool-btn" id="resetBtn" title="恢复初始状态">
-      <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 3 3 9 9 9"/></svg>
-      <span>恢复初始</span>
-    </button>
-
-    <button class="tool-btn compact" id="zoomInBtn" title="放大">
-      <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="21" y1="21" x2="15.5" y2="15.5"/><line x1="10.5" y1="7.5" x2="10.5" y2="13.5"/><line x1="7.5" y1="10.5" x2="13.5" y2="10.5"/></svg>
-    </button>
-
-    <button class="tool-btn compact" id="zoomOutBtn" title="缩小">
-      <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="21" y1="21" x2="15.5" y2="15.5"/><line x1="7.5" y1="10.5" x2="13.5" y2="10.5"/></svg>
-    </button>
-
-    <button class="tool-btn compact" id="fitBtn" title="适配画面">
-      <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
-    </button>
-
-    <button class="tool-btn theme-btn" id="themeBtn" title="切换主题">
-      <svg viewBox="0 0 24 24"><path d="M21 12.6A8.6 8.6 0 1 1 11.4 3a7 7 0 0 0 9.6 9.6Z"/></svg>
-      <span class="theme-name" id="themeName">Paper</span>
-    </button>
-
-    <button class="tool-btn compact" id="fullscreenBtn" title="全屏">
-      <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
-    </button>
-  </div>
-</section>
-
-<section class="status-panel">
-  <div class="status-pill"><span class="status-dot"></span><span id="nodeCount">- 节点</span></div>
-  <div class="status-pill"><span class="status-dot"></span><span id="depthCount">- 层</span></div>
-</section>
-
-<section class="theme-note">
-  <div class="theme-note-title">Theme</div>
-  <div class="theme-note-body" id="themeNoteBody">Paper theme uses serif labels and a warmer page surface.</div>
-</section>
+<div class="badge"><span id="sN">–</span><span id="sD">–</span></div>
 
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-<script src="https://unpkg.com/markmap-view@0.18.12/dist/browser/index.js"></script>
-<script src="https://unpkg.com/markmap-lib@0.18.12/dist/browser/index.iife.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/markmap-view"></script>
+<script src="https://cdn.jsdelivr.net/npm/markmap-lib"></script>
 <script>
-;(async () => {
-  const runtime = window.markmap;
-  if (!runtime) return;
-  const { Transformer, Markmap, loadCSS, loadJS } = runtime;
-  const markdown = "# 推荐曝光、结构外部性与受约束治理：扩展文献综述\n\n## 一、总体框架 <!-- markmap: fold -->\n### 核心命题\n- 推荐系统 = 持续分配可见性的制度性装置\n- Diaz (2024): **推荐即信息分配** *(Foundations & Trends in IR)*\n- 局部曝光结构 → 可审计的结构外部性\n### 五条研究线索\n- 🔴 回音室与过滤气泡 → 对象澄清\n- 🟠 平台实验与因果识别 → 证据标准\n- 🟡 高阶网络与方向性工具 → 分析语言\n- 🟢 曝光公平与多侧推荐 → 资源分配视角\n- 🔵 反事实评估与离策略学习 → 评估方法\n### 核心问题\n- 哪些局部结构值得审计？\n- 哪些动作可在可问责约束下执行？\n- 如何独立评估这些动作？\n\n## 二、回音室、过滤气泡与测量对象 <!-- markmap: fold -->\n### 2.1 规范性忧虑 → 经验测量\n- Sunstein (2001/2017): 信息茧房与公共讨论碎片化\n- Pariser (2011): 算法过滤气泡概念\n- Bruns (2019): **概念批评** — 过滤气泡被过度简化使用\n- Arguedas et al. (2022): 路透研究所系统综述 — 证据不一致\n- **对象混淆**：连接同质性 ≠ 暴露隔离 ≠ 内容偏向 ≠ 态度极化\n### 2.2 观察性研究分解暴露与选择\n- Garrett (2009): 动机性选择暴露 — 政治倾向驱动\n- Barberá (2015): **贝叶斯理想点估计** *(Political Analysis)* — 行为推断意识形态\n- Flaxman, Goel & Rao (2016): 搜索/社交路径扩大暴露多样性\n- **关键区分**：结构变量 vs 态度变量 vs 行为变量\n### 2.3 深读 Bakshy et al. (2015, *Science*)\n- 1010万 Facebook 用户 · 对象 = 跨意识形态暴露比例\n- 发现：用户自身选择 > 算法排序的封闭效应\n- 后果：结构性可见性受控于平台与个体的双重机制\n### 2.4 深读 Cinelli et al. (2021, *PNAS*)\n- 跨平台（Facebook/Reddit/Twitter/Gab）比较\n- 发现：平台架构本身决定回音室程度\n- 后果：同一算法变化在不同平台效果迥异\n### 2.5 概念重访与批判\n- Dubois & Blank (2018): 多元媒体使用者不在气泡中\n- Geschke, Lorenz & Holtz (2019): 三重过滤气泡 ABM 框架\n- Bruns (2019): 概念已偏离学术精度 → 需操作化重建\n### 2.6 小结\n- \"回音室\"不是稳定的单一变量\n- 连接同质性↓ ≠ 暴露封闭↓ ≠ 情感极化↓\n- 结构风险诊断必须明确锚定对象\n\n## 三、真实平台实验与因果识别 <!-- markmap: fold -->\n### 3.1 实地实验浪潮\n- 2020 美国大选 Facebook/Instagram 联合研究项目\n- 信息流替代实验 · 重排序效应 · 态度追踪\n### 3.2 非单调效应的关键证据\n- **Bail et al. (2018, *PNAS*)**: 跨阵营暴露 → 共和党人态度更保守\n  - 结论：增加异质暴露可能适得其反\n- **Levy (2021, *AER*)**: 跨阵营新闻订阅 → 知识↑ 但态度极化变化极小\n  - 结论：暴露→知识路径可行，暴露→态度衰减严重\n- 共同约束：暴露结构可操作，但暴露改变→态度改变存在非单调衰减\n### 3.3 深读 Nyhan et al. (2023, *Nature*)\n- 降低同阵营暴露约 1/3\n- 八项政治态度指标无显著变化\n- 后果：暴露结构 ≠ 结果变量的替身\n### 3.4 深读 Hosseinmardi et al. (2024, *PNAS*)\n- 反事实机器人设计 → 分离用户偏好与算法效应\n- YouTube 推荐的因果边际影响\n- 后果：推荐曝光是独立可识别对象\n### 3.5 更多平台证据\n- González-Bailón et al. (2023, *Science*): 暴露隔离的不对称性\n- Guess et al. (2023, *Science*): 算法→时间序信息流 — 结构变但态度不变\n- Piccardi et al. (2025): 无需平台合作的实时重排实验\n- Gauthier et al. (2026, *Nature*): X 平台实地实验 — 效应高度路径依赖\n- Tokita, Guess & Tarnita (2021, *PNAS*): 意见放大重组社交网络\n### 3.6 小结\n- ✅ 暴露是独立可操作对象\n- ⚠️ 结构改变 ≠ 态度自动改善\n- ❌ \"增加异质暴露 = 解决问题\" 过度简化\n- 💡 任何干预需独立检验结果变量\n\n## 四、高阶网络与方向性感知工具 <!-- markmap: fold -->\n### 4.1 为何成对平均量不够\n- Battiston et al. (2020, *Physics Reports*): 超越成对交互\n- Bick et al. (2023, *SIAM Review*): 高阶网络定义\n- Torres et al. (2021, *SIAM Review*): 表示选择决定可见现象\n- **Benson et al. (2018)**: 单纯闭包 — 高阶预测 > 成对预测\n### 4.2 Hodge 理论与局部环流分离\n- Eckmann (1945): 离散 Hodge 基础\n- Jiang et al. (2011): **HodgeRank** — 局部循环可分离\n- Lim (2020, *SIAM Review*): Hodge Laplacians 理论体系\n- Schaub et al. (2020, *SIAM Review*): 归一化 Hodge 1-Laplacian\n### 4.3 方向性工具\n- Singer & Wu (2012): 向量扩散映射 · connection Laplacian\n- Fanuel et al. (2017): 磁性特征映射 → 有向社区检测\n- Barbarossa & Sardellitti (2020, *IEEE TSP*): 拓扑信号处理\n### 4.4 有向高阶前沿\n- Higher-order Connection Laplacians (2024)\n- **Neuhäuser et al. (2020)**: 多体交互 → 独特共识/极化动力学\n- connection/Hodge 在高阶结构上分离局部环流\n### 4.5 深读 Jiang et al. (2011) 与 Gong et al. (2024)\n- HodgeRank: 统计排名 → 一致/局部循环/调和分解\n- Gong et al.: 高阶 Laplacian → 生存模型/结构诊断\n### 4.6 小结\n- connection phase → 编码曝光失衡\n- Hodge 分解 → 提取局部回流\n- 这些是分析工具，不是论文主创新\n\n## 五、曝光公平、多侧推荐与动态偏差 <!-- markmap: fold -->\n### 5.1 奠基文献\n- **Zehlike et al. (2017)**: FA*IR — 约束式公平 top-k 排名先驱\n- Singh & Joachims (2018): 曝光建模为注意力分配\n- Biega et al. (2018): 注意力公平 — 可摊销资源\n- **Diaz (2024)**: 推荐 = 信息分配 → 公平 = 分配正义\n### 5.2 多侧公平\n- **Patro et al. (2020)**: FairRec — 消费者+生产者双侧公平\n- Wu et al. (2022): 联合多侧曝光公平\n- Chen et al. (2024): 多侧在线公平 + 不确定反馈\n- Shafiloo et al. (2026): 消费者/提供者/项目三侧公平\n### 5.3 深读 Diaz et al. (2020) 与 Wu et al. (2022)\n- Diaz: 期望曝光 — 分布化方式评价\n- Wu: 系统性曝光偏差 → 社会伤害的正式连接\n### 5.4 动态偏差\n- Mansoury & Mobasher (2023): 静态方法在长期反馈中失效\n- Yoo et al. (2024): 公平差距随时间扩大\n### 5.5 小结\n- \"被看见\" = 可分配资源\n- 结构外部性 ⊃ 曝光公平（不能互相吞并）\n- 公平回答\"谁获得多少\"，结构外部性还回答\"局部如何组织\"\n\n## 六、反事实评估与离策略学习 <!-- markmap: fold -->\n### 6.1 奠基文献\n- **Joachims et al. (2017)**: 无偏排序学习 *(WSDM)* — 开创子领域\n- **Saito & Joachims (2022)**: 大动作空间 OPE *(ICML)* — embedding 降维\n### 6.2 日志数据基础设施\n- MIND (Wu et al. 2020): 新闻 impression 级日志\n- FINN.no Slates (Ie et al. 2023): 请求-展示列表层级\n- KuaiRand (Gao et al. 2022): 随机曝光日志\n### 6.3 深读 FINN.no Slates 与 KuaiRand\n- Slate = 整页推荐列表 → 动作空间是列表空间\n- KuaiRand: 随机分配曝光 → 天然的无偏评估基准\n### 6.4 离策略学习与估计\n- IPS / DM / DR 三族估计器\n- Swaminathan & Joachims (2015): 对数策略学习\n- Buchholz et al. (2022): 意识形态光谱上的再排序\n### 6.5 小结\n- 评价层必须同时报告：结构外部性 + 效用 + 公平 + 代价 + 不确定性\n- 请求-展示列表层级动作空间是未来方向\n\n## 七、综合比较与研究空白 <!-- markmap: fold -->\n### 六大研究空白\n- **Gap 1**: 对象层 — 推荐曝光网络仍缺统一操作化定义\n- **Gap 2**: 高阶方向性 — connection 工具尚未应用于推荐外部性\n- **Gap 3**: 诊断层 — 缺校准到独立不利结果的风险诊断器\n- **Gap 4**: 动作层 — 需从聚合边扰动升级到列表级重排序\n- **Gap 5**: 评估层 — 缺整合结构+效用+公平+代价的统一评估\n- **Gap 6**: 治理层 — 缺可部署的审计制度链条 (Raji et al. 2020)\n### 六项写作约束\n- 1️⃣ 锚定曝光分配，不泛化为\"回音室\"\n- 2️⃣ 结构风险 = 审计信号 ≠ 态度结果替身\n- 3️⃣ 诊断层 → 校准模型（非手工固定权重）\n- 4️⃣ 动作层 → 列表级重排序\n- 5️⃣ 评估层 → 多维同时报告\n- 6️⃣ 证据链 → 真实日志主评 + 仿真隔离 + 旧回放附证\n\n## 八、结论 <!-- markmap: fold -->\n### 研究重心转移\n- \"找出相关内容\" → \"平台如何持续分配可见性\"\n- Diaz (2024): 分配视角的统一入口\n### 论文成立条件\n- 对象 = 曝光分配的结构问题\n- 边界 = 结构风险是中层审计对象 (Raji et al. 2020)\n- 方法 = 列表级动作空间 + 分层证据设计\n### 暴露→态度的衰减约束\n- Bail (2018): 增加异质暴露可能反效果\n- Levy (2021): 暴露→知识可行，→态度衰减严重\n- 任何干预方案不可默认\"更多跨群暴露 = 更好结果\"\n";
-  const transformer = new Transformer();
-  const result = transformer.transform(markdown);
-  const root = result.root;
-  const features = result.features;
-
-  if (loadCSS || loadJS) {
-    const assets = transformer.getUsedAssets(features);
-    if (assets.styles && loadCSS) loadCSS(assets.styles);
-    if (assets.scripts && loadJS) {
-      await loadJS(assets.scripts, { getMarkmap: () => window.markmap });
-    }
+(function(){
+  var md = "# 推荐曝光、结构外部性与受约束治理：扩展文献综述\n\n## 一、总体框架 <!-- markmap: fold -->\n### 核心命题\n- 推荐系统 = 持续分配可见性的制度性装置\n- Diaz (2024): **推荐即信息分配** *(Foundations & Trends in IR)*\n- 局部曝光结构 → 可审计的结构外部性\n### 五条研究线索\n- 🔴 回音室与过滤气泡 → 对象澄清\n- 🟠 平台实验与因果识别 → 证据标准\n- 🟡 高阶网络与方向性工具 → 分析语言\n- 🟢 曝光公平与多侧推荐 → 资源分配视角\n- 🔵 反事实评估与离策略学习 → 评估方法\n### 核心问题\n- 哪些局部结构值得审计？\n- 哪些动作可在可问责约束下执行？\n- 如何独立评估这些动作？\n\n## 二、回音室、过滤气泡与测量对象 <!-- markmap: fold -->\n### 2.1 规范性忧虑 → 经验测量\n- Sunstein (2001/2017): 信息茧房与公共讨论碎片化\n- Pariser (2011): 算法过滤气泡概念\n- Bruns (2019): **概念批评** — 过滤气泡被过度简化使用\n- Arguedas et al. (2022): 路透研究所系统综述 — 证据不一致\n- **对象混淆**：连接同质性 ≠ 暴露隔离 ≠ 内容偏向 ≠ 态度极化\n### 2.2 观察性研究分解暴露与选择\n- Garrett (2009): 动机性选择暴露 — 政治倾向驱动\n- Barberá (2015): **贝叶斯理想点估计** *(Political Analysis)* — 行为推断意识形态\n- Flaxman, Goel & Rao (2016): 搜索/社交路径扩大暴露多样性\n- **关键区分**：结构变量 vs 态度变量 vs 行为变量\n### 2.3 深读 Bakshy et al. (2015, *Science*)\n- 1010万 Facebook 用户 · 对象 = 跨意识形态暴露比例\n- 发现：用户自身选择 > 算法排序的封闭效应\n- 后果：结构性可见性受控于平台与个体的双重机制\n### 2.4 深读 Cinelli et al. (2021, *PNAS*)\n- 跨平台（Facebook/Reddit/Twitter/Gab）比较\n- 发现：平台架构本身决定回音室程度\n- 后果：同一算法变化在不同平台效果迥异\n### 2.5 概念重访与批判\n- Dubois & Blank (2018): 多元媒体使用者不在气泡中\n- Geschke, Lorenz & Holtz (2019): 三重过滤气泡 ABM 框架\n- Bruns (2019): 概念已偏离学术精度 → 需操作化重建\n### 2.6 小结\n- \"回音室\"不是稳定的单一变量\n- 连接同质性↓ ≠ 暴露封闭↓ ≠ 情感极化↓\n- 结构风险诊断必须明确锚定对象\n\n## 三、真实平台实验与因果识别 <!-- markmap: fold -->\n### 3.1 实地实验浪潮\n- 2020 美国大选 Facebook/Instagram 联合研究项目\n- 信息流替代实验 · 重排序效应 · 态度追踪\n### 3.2 非单调效应的关键证据\n- **Bail et al. (2018, *PNAS*)**: 跨阵营暴露 → 共和党人态度更保守\n  - 结论：增加异质暴露可能适得其反\n- **Levy (2021, *AER*)**: 跨阵营新闻订阅 → 知识↑ 但态度极化变化极小\n  - 结论：暴露→知识路径可行，暴露→态度衰减严重\n- 共同约束：暴露结构可操作，但暴露改变→态度改变存在非单调衰减\n### 3.3 深读 Nyhan et al. (2023, *Nature*)\n- 降低同阵营暴露约 1/3\n- 八项政治态度指标无显著变化\n- 后果：暴露结构 ≠ 结果变量的替身\n### 3.4 深读 Hosseinmardi et al. (2024, *PNAS*)\n- 反事实机器人设计 → 分离用户偏好与算法效应\n- YouTube 推荐的因果边际影响\n- 后果：推荐曝光是独立可识别对象\n### 3.5 更多平台证据\n- González-Bailón et al. (2023, *Science*): 暴露隔离的不对称性\n- Guess et al. (2023, *Science*): 算法→时间序信息流 — 结构变但态度不变\n- Piccardi et al. (2025): 无需平台合作的实时重排实验\n- Gauthier et al. (2026, *Nature*): X 平台实地实验 — 效应高度路径依赖\n- Tokita, Guess & Tarnita (2021, *PNAS*): 意见放大重组社交网络\n### 3.6 小结\n- ✅ 暴露是独立可操作对象\n- ⚠️ 结构改变 ≠ 态度自动改善\n- ❌ \"增加异质暴露 = 解决问题\" 过度简化\n- 💡 任何干预需独立检验结果变量\n\n## 四、高阶网络与方向性感知工具 <!-- markmap: fold -->\n### 4.1 为何成对平均量不够\n- Battiston et al. (2020, *Physics Reports*): 超越成对交互\n- Bick et al. (2023, *SIAM Review*): 高阶网络定义\n- Torres et al. (2021, *SIAM Review*): 表示选择决定可见现象\n- **Benson et al. (2018)**: 单纯闭包 — 高阶预测 > 成对预测\n### 4.2 Hodge 理论与局部环流分离\n- Eckmann (1945): 离散 Hodge 基础\n- Jiang et al. (2011): **HodgeRank** — 局部循环可分离\n- Lim (2020, *SIAM Review*): Hodge Laplacians 理论体系\n- Schaub et al. (2020, *SIAM Review*): 归一化 Hodge 1-Laplacian\n### 4.3 方向性工具\n- Singer & Wu (2012): 向量扩散映射 · connection Laplacian\n- Fanuel et al. (2017): 磁性特征映射 → 有向社区检测\n- Barbarossa & Sardellitti (2020, *IEEE TSP*): 拓扑信号处理\n### 4.4 有向高阶前沿\n- Higher-order Connection Laplacians (2024)\n- **Neuhäuser et al. (2020)**: 多体交互 → 独特共识/极化动力学\n- connection/Hodge 在高阶结构上分离局部环流\n### 4.5 深读 Jiang et al. (2011) 与 Gong et al. (2024)\n- HodgeRank: 统计排名 → 一致/局部循环/调和分解\n- Gong et al.: 高阶 Laplacian → 生存模型/结构诊断\n### 4.6 小结\n- connection phase → 编码曝光失衡\n- Hodge 分解 → 提取局部回流\n- 这些是分析工具，不是论文主创新\n\n## 五、曝光公平、多侧推荐与动态偏差 <!-- markmap: fold -->\n### 5.1 奠基文献\n- **Zehlike et al. (2017)**: FA*IR — 约束式公平 top-k 排名先驱\n- Singh & Joachims (2018): 曝光建模为注意力分配\n- Biega et al. (2018): 注意力公平 — 可摊销资源\n- **Diaz (2024)**: 推荐 = 信息分配 → 公平 = 分配正义\n### 5.2 多侧公平\n- **Patro et al. (2020)**: FairRec — 消费者+生产者双侧公平\n- Wu et al. (2022): 联合多侧曝光公平\n- Chen et al. (2024): 多侧在线公平 + 不确定反馈\n- Shafiloo et al. (2026): 消费者/提供者/项目三侧公平\n### 5.3 深读 Diaz et al. (2020) 与 Wu et al. (2022)\n- Diaz: 期望曝光 — 分布化方式评价\n- Wu: 系统性曝光偏差 → 社会伤害的正式连接\n### 5.4 动态偏差\n- Mansoury & Mobasher (2023): 静态方法在长期反馈中失效\n- Yoo et al. (2024): 公平差距随时间扩大\n### 5.5 小结\n- \"被看见\" = 可分配资源\n- 结构外部性 ⊃ 曝光公平（不能互相吞并）\n- 公平回答\"谁获得多少\"，结构外部性还回答\"局部如何组织\"\n\n## 六、反事实评估与离策略学习 <!-- markmap: fold -->\n### 6.1 奠基文献\n- **Joachims et al. (2017)**: 无偏排序学习 *(WSDM)* — 开创子领域\n- **Saito & Joachims (2022)**: 大动作空间 OPE *(ICML)* — embedding 降维\n### 6.2 日志数据基础设施\n- MIND (Wu et al. 2020): 新闻 impression 级日志\n- FINN.no Slates (Ie et al. 2023): 请求-展示列表层级\n- KuaiRand (Gao et al. 2022): 随机曝光日志\n### 6.3 深读 FINN.no Slates 与 KuaiRand\n- Slate = 整页推荐列表 → 动作空间是列表空间\n- KuaiRand: 随机分配曝光 → 天然的无偏评估基准\n### 6.4 离策略学习与估计\n- IPS / DM / DR 三族估计器\n- Swaminathan & Joachims (2015): 对数策略学习\n- Buchholz et al. (2022): 意识形态光谱上的再排序\n### 6.5 小结\n- 评价层必须同时报告：结构外部性 + 效用 + 公平 + 代价 + 不确定性\n- 请求-展示列表层级动作空间是未来方向\n\n## 七、综合比较与研究空白 <!-- markmap: fold -->\n### 六大研究空白\n- **Gap 1**: 对象层 — 推荐曝光网络仍缺统一操作化定义\n- **Gap 2**: 高阶方向性 — connection 工具尚未应用于推荐外部性\n- **Gap 3**: 诊断层 — 缺校准到独立不利结果的风险诊断器\n- **Gap 4**: 动作层 — 需从聚合边扰动升级到列表级重排序\n- **Gap 5**: 评估层 — 缺整合结构+效用+公平+代价的统一评估\n- **Gap 6**: 治理层 — 缺可部署的审计制度链条 (Raji et al. 2020)\n### 六项写作约束\n- 1️⃣ 锚定曝光分配，不泛化为\"回音室\"\n- 2️⃣ 结构风险 = 审计信号 ≠ 态度结果替身\n- 3️⃣ 诊断层 → 校准模型（非手工固定权重）\n- 4️⃣ 动作层 → 列表级重排序\n- 5️⃣ 评估层 → 多维同时报告\n- 6️⃣ 证据链 → 真实日志主评 + 仿真隔离 + 旧回放附证\n\n## 八、结论 <!-- markmap: fold -->\n### 研究重心转移\n- \"找出相关内容\" → \"平台如何持续分配可见性\"\n- Diaz (2024): 分配视角的统一入口\n### 论文成立条件\n- 对象 = 曝光分配的结构问题\n- 边界 = 结构风险是中层审计对象 (Raji et al. 2020)\n- 方法 = 列表级动作空间 + 分层证据设计\n### 暴露→态度的衰减约束\n- Bail (2018): 增加异质暴露可能反效果\n- Levy (2021): 暴露→知识可行，→态度衰减严重\n- 任何干预方案不可默认\"更多跨群暴露 = 更好结果\"\n";
+  var T = markmap.Transformer ? new markmap.Transformer() : new (markmap.default || markmap).Transformer();
+  var r = T.transform(md);
+  var root = r.root, features = r.features;
+  var MM = markmap.Markmap || (markmap.default || markmap).Markmap;
+  if(markmap.loadCSS && features){
+    var a = T.getUsedAssets(features);
+    if(a.styles) markmap.loadCSS(a.styles);
+    if(a.scripts) markmap.loadJS(a.scripts);
   }
 
-  const clone = (value) => JSON.parse(JSON.stringify(value));
-  const initialRoot = clone(root);
+  var initial = JSON.parse(JSON.stringify(root));
+  var PL = ['#57534e','#64748b','#5b7261','#78716c','#6b7280','#71717a','#57534e','#64748b'];
+  var PD = ['#a8a29e','#94a3b8','#86a990','#a8a29e','#9ca3af','#a1a1aa','#a8a29e','#94a3b8'];
+  function isDark(){ return document.body.classList.contains('dark'); }
+  function colorFn(n){
+    var pal = isDark() ? PD : PL;
+    return pal[n.state.depth % pal.length];
+  }
 
-  const themeMeta = {
-    paper: {
-      name: "Paper",
-      note: "Paper theme uses serif labels and a warmer page surface.",
-      palette: ["#2b2117", "#7c4f29", "#8f6c45", "#4f6454", "#49606e"],
-      font: '"Fraunces", "Noto Serif SC", serif',
-    },
-    nocturne: {
-      name: "Nocturne",
-      note: "Nocturne theme shifts to cleaner sans labels and a darker studio palette.",
-      palette: ["#edf3f5", "#a9d1ca", "#d5bea0", "#b6c2d4", "#d5d1ca"],
-      font: '"Manrope", "Noto Sans SC", sans-serif',
-    },
-  };
-
-  const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  let currentTheme = localStorage.getItem("mindmap-theme") || (preferredDark ? "nocturne" : "paper");
-  document.documentElement.dataset.theme = currentTheme;
-
-  const nodeColor = (node) => {
-    const palette = themeMeta[currentTheme].palette;
-    const depth = node.state && typeof node.state.depth === "number" ? node.state.depth : 0;
-    return palette[depth % palette.length];
-  };
-
-  const mm = Markmap.create("#mindmap", {
+  var mm = MM.create('#mm', {
     autoFit: true,
-    duration: 120,
-    maxWidth: 280,
-    paddingX: 18,
-    spacingVertical: 6,
+    duration: 150,
+    maxWidth: 260,
+    paddingX: 12,
+    spacingVertical: 4,
     initialExpandLevel: 2,
-    color: nodeColor,
-    lineWidth: (node) => Math.max(1.1, 2.4 - ((node.state && node.state.depth) || 0) * 0.28),
-  }, clone(initialRoot));
+    color: colorFn,
+    lineWidth: function(n){ return Math.max(1, 2.2 - n.state.depth * 0.35); }
+  }, root);
 
-  const applyTextFont = () => {
-    const font = themeMeta[currentTheme].font;
-    document.querySelectorAll("#mindmap text").forEach((text) => {
-      text.style.fontFamily = font;
+  var nc = 0, mx = 0;
+  function cnt(n,d){ nc++; if(d>mx) mx=d; if(n.children) n.children.forEach(function(c){cnt(c,d+1);}); }
+  cnt(initial, 0);
+  document.getElementById('sN').textContent = nc + ' 节点';
+  document.getElementById('sD').textContent = mx + ' 层';
+
+  function walk(node, fn){
+    fn(node);
+    if(node.children) node.children.forEach(function(c){ walk(c, fn); });
+  }
+
+  function resetView(data){
+    mm.setData(data).then(function(){ mm.fit(); });
+  }
+
+  document.getElementById('bE').onclick = function(){
+    walk(mm.state.data, function(n){
+      n.payload = Object.assign({}, n.payload, { fold: 0 });
     });
-  };
-
-  const applyTheme = () => {
-    document.documentElement.dataset.theme = currentTheme;
-    document.getElementById("themeName").textContent = themeMeta[currentTheme].name;
-    document.getElementById("themeNoteBody").textContent = themeMeta[currentTheme].note;
-    localStorage.setItem("mindmap-theme", currentTheme);
-    mm.setOptions({ color: nodeColor });
     mm.renderData(mm.state.data);
-    applyTextFont();
-  };
-
-  const countStats = (node, depth = 0) => {
-    let nodes = 1;
-    let maxDepth = depth;
-    (node.children || []).forEach((child) => {
-      const result = countStats(child, depth + 1);
-      nodes += result.nodes;
-      maxDepth = Math.max(maxDepth, result.maxDepth);
-    });
-    return { nodes, maxDepth };
-  };
-
-  const stats = countStats(initialRoot, 0);
-  document.getElementById("nodeCount").textContent = `${stats.nodes} 节点`;
-  document.getElementById("depthCount").textContent = `${stats.maxDepth} 层`;
-
-  const walk = (node, callback, depth = 0) => {
-    callback(node, depth);
-    (node.children || []).forEach((child) => walk(child, callback, depth + 1));
-  };
-
-  document.getElementById("expandBtn").addEventListener("click", async () => {
-    const expanded = clone(initialRoot);
-    walk(expanded, (node) => {
-      node.payload = Object.assign({}, node.payload || {}, { fold: 0 });
-    });
-    await mm.setData(expanded);
     mm.fit();
-    applyTextFont();
-  });
+  };
 
-  document.getElementById("resetBtn").addEventListener("click", async () => {
-    await mm.setData(clone(initialRoot));
-    mm.fit();
-    applyTextFont();
-  });
+  document.getElementById('bC').onclick = function(){
+    resetView(JSON.parse(JSON.stringify(initial)));
+  };
 
-  document.getElementById("zoomInBtn").addEventListener("click", () => mm.rescale(1.22));
-  document.getElementById("zoomOutBtn").addEventListener("click", () => mm.rescale(0.82));
-  document.getElementById("fitBtn").addEventListener("click", () => mm.fit());
+  document.getElementById('bZI').onclick = function(){ mm.rescale(1.25); };
+  document.getElementById('bZO').onclick = function(){ mm.rescale(0.8); };
+  document.getElementById('bF0').onclick = function(){ mm.fit(); };
 
-  document.getElementById("themeBtn").addEventListener("click", () => {
-    currentTheme = currentTheme === "paper" ? "nocturne" : "paper";
-    applyTheme();
-  });
+  function syncIcons(){
+    document.getElementById('iS').style.display = isDark() ? 'block' : 'none';
+    document.getElementById('iM').style.display = isDark() ? 'none' : 'block';
+  }
+  if(localStorage.getItem('mm-t') === 'dark' || matchMedia('(prefers-color-scheme:dark)').matches){
+    document.body.classList.add('dark');
+  }
+  syncIcons();
+  document.getElementById('bD').onclick = function(){
+    document.body.classList.toggle('dark');
+    syncIcons();
+    localStorage.setItem('mm-t', isDark() ? 'dark' : 'light');
+    mm.setOptions({ color: colorFn });
+    mm.renderData(mm.state.data);
+  };
 
-  document.getElementById("fullscreenBtn").addEventListener("click", () => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    } else {
-      document.documentElement.requestFullscreen();
-    }
-  });
-
-  let searchTimer;
-  document.getElementById("searchInput").addEventListener("input", (event) => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => {
-      const query = event.target.value.trim().toLowerCase();
-      document.querySelectorAll("#mindmap text").forEach((text) => {
-        const match = query && text.textContent.toLowerCase().includes(query);
-        text.classList.toggle("mm-match", !!match);
+  var st;
+  document.getElementById('si').oninput = function(){
+    clearTimeout(st);
+    var self = this;
+    st = setTimeout(function(){
+      var q = self.value.trim().toLowerCase();
+      document.querySelectorAll('#mm text').forEach(function(t){
+        t.classList.toggle('mm-hl', q && t.textContent.toLowerCase().indexOf(q) >= 0);
       });
-      applyTextFont();
-    }, 120);
-  });
+    }, 150);
+  };
 
-  applyTheme();
-  mm.fit();
-  setTimeout(applyTextFont, 80);
+  document.getElementById('bFS').onclick = function(){
+    if(document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen();
+  };
 })();
 </script>
 </body>
