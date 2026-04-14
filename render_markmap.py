@@ -1,489 +1,645 @@
-"""render_markmap.py — 从 .mm.md 源文件生成高质量 Markmap HTML 思维导图。
+"""render_markmap.py — 从 .mm.md 源文件生成交互式 Markmap HTML 页面。
 
-用法:  python render_markmap.py           # 生成全部页面
-       python render_markmap.py --serve   # 生成后启动 HTTP 预览
+用法:
+  python render_markmap.py
+  python render_markmap.py --serve
 
-输出:  literature_review.html, research_journey.html, index.html（着陆页）
-依赖:  纯 Python 3.9+，无第三方库。HTML 通过 markmap-autoloader 自动加载运行时。
+输出:
+  literature_review.html
+  research_journey.html
+  index.html
 """
 from __future__ import annotations
 
 import argparse
+import functools
 import html
 import http.server
-import functools
 import json
 import textwrap
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 
-# ── 页面元数据 ──────────────────────────────────────────────
 PAGES: dict[str, dict[str, str]] = {
     "literature_review": {
         "title": "文献综述图谱",
-        "subtitle": "推荐曝光 · 结构外部性 · 受约束治理",
-        "icon": "📚",
-        "gradient_from": "#6366f1",
-        "gradient_to": "#a855f7",
+        "subtitle": "推荐曝光 · 结构外部性 · 证据与治理",
+        "label": "Literature Map",
+        "accent": "#9a5d2f",
+        "accent_soft": "#d0b38f",
+        "index_chip": "01",
     },
     "research_journey": {
-        "title": "论文研究图谱",
-        "subtitle": "对象层次 · 三组件框架 · 理论边界 · 评估协议",
-        "icon": "🧭",
-        "gradient_from": "#0891b2",
-        "gradient_to": "#06b6d4",
+        "title": "研究思考图谱",
+        "subtitle": "对象层次 · 三组件框架 · 评估协议 · 边界",
+        "label": "Research Journey",
+        "accent": "#215f5a",
+        "accent_soft": "#93bdb6",
+        "index_chip": "02",
     },
 }
 
 
-# ── 思维导图页面模板 ──────────────────────────────────────
-PAGE_TEMPLATE = textwrap.dedent("""\
+PAGE_TEMPLATE = textwrap.dedent(
+    """\
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>{title} — 推荐曝光结构外部性研究</title>
+<title>{title}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet"/>
 <style>
-/* ═══════════════ 全局变量 ═══════════════ */
 :root {{
-  --g-from: {gradient_from};
-  --g-to: {gradient_to};
-  --bg: #f0f4f8;
-  --fg: #1e293b;
-  --surface: rgba(255,255,255,.82);
-  --surface-solid: #ffffff;
-  --border: rgba(148,163,184,.18);
-  --shadow-sm: 0 2px 8px rgba(15,23,42,.04);
-  --shadow-md: 0 8px 24px rgba(15,23,42,.06);
-  --shadow-lg: 0 20px 50px rgba(15,23,42,.1);
-  --radius: 14px;
-  --radius-sm: 10px;
-  --font: "Inter","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
-  --transition: .3s cubic-bezier(.4,0,.2,1);
-}}
-[data-theme="dark"] {{
-  --bg: #0c1222;
-  --fg: #e2e8f0;
-  --surface: rgba(30,41,59,.78);
-  --surface-solid: #1e293b;
-  --border: rgba(71,85,105,.4);
-  --shadow-sm: 0 2px 8px rgba(0,0,0,.2);
-  --shadow-md: 0 8px 24px rgba(0,0,0,.25);
-  --shadow-lg: 0 20px 50px rgba(0,0,0,.4);
+  --bg: #efe4d2;
+  --bg-deep: #f7f1e7;
+  --surface: rgba(252, 249, 243, 0.88);
+  --surface-strong: rgba(255, 253, 249, 0.94);
+  --line: rgba(70, 49, 31, 0.14);
+  --text: #23180f;
+  --text-soft: #685a4b;
+  --shadow: 0 18px 50px rgba(49, 34, 19, 0.12);
+  --chip: {accent};
+  --chip-soft: {accent_soft};
+  --node-0: #2b2117;
+  --node-1: #7c4f29;
+  --node-2: #8f6c45;
+  --node-3: #4f6454;
+  --node-4: #49606e;
+  --ui-font: "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --map-font: "Fraunces", "Noto Serif SC", "Source Han Serif SC", serif;
+  --match: #b56d32;
 }}
 
-/* ═══════════════ 重置 ═══════════════ */
-*, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
-html, body {{ height: 100%; overflow: hidden; }}
+html[data-theme="nocturne"] {{
+  --bg: #12181d;
+  --bg-deep: #1b242a;
+  --surface: rgba(19, 26, 31, 0.82);
+  --surface-strong: rgba(24, 31, 37, 0.9);
+  --line: rgba(184, 206, 212, 0.16);
+  --text: #e5ecef;
+  --text-soft: #a9b8be;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
+  --chip: {accent_soft};
+  --chip-soft: {accent};
+  --node-0: #edf3f5;
+  --node-1: #a9d1ca;
+  --node-2: #d5bea0;
+  --node-3: #b6c2d4;
+  --node-4: #d5d1ca;
+  --ui-font: "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --map-font: "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --match: #f1c28b;
+}}
+
+*,
+*::before,
+*::after {{
+  box-sizing: border-box;
+}}
+
+html,
 body {{
-  font-family: var(--font);
-  background: var(--bg);
-  color: var(--fg);
-  transition: background var(--transition), color var(--transition);
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }}
 
-/* ═══════════════ 背景装饰 ═══════════════ */
+body {{
+  margin: 0;
+  color: var(--text);
+  font-family: var(--ui-font);
+  background:
+    radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--chip-soft) 24%, transparent), transparent 28%),
+    radial-gradient(circle at 92% 16%, color-mix(in srgb, var(--chip) 14%, transparent), transparent 24%),
+    linear-gradient(180deg, var(--bg-deep) 0%, var(--bg) 100%);
+}}
+
 body::before {{
-  content: '';
+  content: "";
   position: fixed;
-  top: -40%; right: -20%;
-  width: 80vw; height: 80vw;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--g-from) 12%, transparent) 0%, transparent 70%);
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.16;
   pointer-events: none;
-  z-index: 0;
-}}
-body::after {{
-  content: '';
-  position: fixed;
-  bottom: -30%; left: -15%;
-  width: 60vw; height: 60vw;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--g-to) 10%, transparent) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
 }}
 
-/* ═══════════════ 思维导图画布 ═══════════════ */
-.markmap {{
-  position: absolute;
-  top: 0; left: 0;
-  width: 100vw;
-  height: 100vh;
+#mindmap {{
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: 1;
 }}
-.markmap svg {{
+
+#mindmap svg {{
   width: 100%;
   height: 100%;
 }}
 
-/* ═══════════════ 顶部工具栏 ═══════════════ */
-.toolbar {{
+.dock {{
   position: fixed;
-  top: 16px; left: 50%;
+  top: 18px;
+  left: 50%;
   transform: translateX(-50%);
+  z-index: 20;
+  width: min(1100px, calc(100vw - 24px));
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 100px;
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  box-shadow: var(--shadow-md);
-  z-index: 200;
-  transition: all var(--transition);
-}}
-.toolbar:hover {{
-  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(18px) saturate(1.05);
+  -webkit-backdrop-filter: blur(18px) saturate(1.05);
+  box-shadow: var(--shadow);
 }}
 
-/* 品牌标识 */
 .brand {{
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}}
+
+.brand-mark {{
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--chip) 30%, var(--line));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--chip) 92%, white 8%), color-mix(in srgb, var(--chip-soft) 78%, white 22%));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fffaf2;
+  font: 800 12px/1 var(--ui-font);
+  letter-spacing: 0.06em;
+}}
+
+.brand-copy {{
+  min-width: 0;
+}}
+
+.brand-label {{
+  font: 700 11px/1 var(--ui-font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: 5px;
+}}
+
+.brand-title {{
+  font: 700 18px/1.1 var(--map-font);
+  letter-spacing: -0.02em;
+}}
+
+.brand-subtitle {{
+  font: 600 11px/1.35 var(--ui-font);
+  color: var(--text-soft);
+  margin-top: 4px;
+}}
+
+.controls {{
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-right: 12px;
-  border-right: 1px solid var(--border);
-  margin-right: 4px;
-  text-decoration: none;
-  color: var(--fg);
-}}
-.brand-icon {{
-  width: 28px; height: 28px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--g-from), var(--g-to));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--g-from) 30%, transparent);
-}}
-.brand-text {{
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: -.01em;
-}}
-.brand-sub {{
-  font-size: 10px;
-  font-weight: 500;
-  opacity: .5;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }}
 
-/* 按钮 */
-.tbtn {{
-  display: inline-flex;
+.search-box {{
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
-  height: 34px;
-  min-width: 34px;
+  gap: 8px;
+  height: 38px;
   padding: 0 12px;
-  border: 1px solid transparent;
-  border-radius: 100px;
-  background: transparent;
-  color: var(--fg);
-  font-family: var(--font);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all .2s;
-  white-space: nowrap;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-strong) 92%, transparent);
 }}
-.tbtn:hover {{
-  background: color-mix(in srgb, var(--g-from) 8%, transparent);
-  border-color: color-mix(in srgb, var(--g-from) 15%, transparent);
-}}
-.tbtn:active {{
-  transform: scale(.96);
-}}
-.tbtn svg {{
-  width: 16px; height: 16px;
+
+.search-box svg,
+.tool-btn svg {{
+  width: 15px;
+  height: 15px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 2;
+  stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
 }}
-.tbtn-icon {{
-  padding: 0;
-  width: 34px;
-}}
 
-/* 搜索 */
-.search {{
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 12px;
-  border: 1px solid transparent;
-  border-radius: 100px;
-  background: color-mix(in srgb, var(--fg) 4%, transparent);
-  transition: all .2s;
-}}
-.search:focus-within {{
-  background: var(--surface-solid);
-  border-color: var(--g-from);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--g-from) 12%, transparent);
-}}
-.search svg {{
-  width: 14px; height: 14px;
-  fill: none; stroke: currentColor;
-  stroke-width: 2; opacity: .4;
-}}
-.search input {{
-  border: none;
-  background: transparent;
-  outline: none;
-  font-family: var(--font);
-  font-size: 12px;
-  color: var(--fg);
+.search-box input {{
   width: 120px;
-}}
-.search input::placeholder {{ color: color-mix(in srgb, var(--fg) 35%, transparent); }}
-
-/* 分隔符 */
-.sep {{
-  width: 1px;
-  height: 20px;
-  background: var(--border);
-  margin: 0 4px;
+  border: 0;
+  outline: none;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  font: 600 12px/1 var(--ui-font);
 }}
 
-/* ═══════════════ 底部统计 ═══════════════ */
-.stats {{
-  position: fixed;
-  bottom: 20px; left: 20px;
-  display: flex; gap: 6px;
-  z-index: 200;
+.search-box input::placeholder {{
+  color: color-mix(in srgb, var(--text-soft) 80%, white 20%);
 }}
-.stat {{
-  display: flex;
+
+.tool-btn {{
+  height: 38px;
+  min-width: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-strong) 90%, transparent);
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 12px;
-  border-radius: 100px;
-  font-size: 11px;
-  font-weight: 600;
+  justify-content: center;
+  gap: 8px;
+  font: 700 12px/1 var(--ui-font);
+  transition: transform .14s ease, background .14s ease, border-color .14s ease;
+}}
+
+.tool-btn:hover {{
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--chip) 42%, var(--line));
+  background: color-mix(in srgb, var(--chip-soft) 18%, var(--surface-strong));
+}}
+
+.tool-btn:active {{
+  transform: translateY(0);
+}}
+
+.tool-btn.compact {{
+  padding: 0;
+  width: 38px;
+}}
+
+.theme-btn .theme-name {{
+  display: inline-block;
+  min-width: 62px;
+  text-align: left;
+}}
+
+.status-panel {{
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  z-index: 20;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}}
+
+.status-pill {{
+  min-height: 34px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
   background: var(--surface);
-  border: 1px solid var(--border);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow);
+  color: var(--text-soft);
+  font: 700 11px/1 var(--ui-font);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }}
-.stat-dot {{
-  width: 6px; height: 6px;
+
+.status-dot {{
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--g-from), var(--g-to));
+  background: linear-gradient(135deg, var(--chip), var(--chip-soft));
 }}
 
-/* ═══════════════ 响应式 ═══════════════ */
-@media (max-width: 768px) {{
-  .toolbar {{ top: 10px; padding: 6px 10px; gap: 4px; max-width: calc(100vw - 20px); flex-wrap: wrap; justify-content: center; }}
-  .brand {{ display: none; }}
-  .search input {{ width: 80px; }}
-  .tbtn span {{ display: none; }}
-  .stats {{ left: 10px; bottom: 10px; }}
+.theme-note {{
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 20;
+  max-width: min(280px, calc(100vw - 36px));
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow);
 }}
 
-/* ═══════════════ 打印 ═══════════════ */
-@media print {{
-  .toolbar, .stats {{ display: none !important; }}
-  body::before, body::after {{ display: none; }}
+.theme-note .theme-note-title {{
+  font: 700 11px/1 var(--ui-font);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: 6px;
 }}
 
-/* ═══════════════ markmap 节点文字 ═══════════════ */
+.theme-note .theme-note-body {{
+  font: 700 13px/1.45 var(--map-font);
+}}
+
+.markmap-node > circle {{
+  stroke: color-mix(in srgb, var(--chip) 34%, var(--line));
+  stroke-width: 1.25px;
+}}
+
 .markmap-node text {{
-  font-family: var(--font) !important;
+  font-family: var(--map-font) !important;
+  letter-spacing: 0.01em;
+}}
+
+.mm-match {{
+  fill: var(--match) !important;
+  font-weight: 800 !important;
+}}
+
+@media (max-width: 900px) {{
+  .dock {{
+    top: 12px;
+    padding: 10px;
+    align-items: stretch;
+    flex-direction: column;
+  }}
+
+  .brand {{
+    width: 100%;
+  }}
+
+  .controls {{
+    width: 100%;
+    justify-content: flex-start;
+  }}
+}}
+
+@media (max-width: 640px) {{
+  .brand-title {{
+    font-size: 16px;
+  }}
+
+  .brand-subtitle {{
+    display: none;
+  }}
+
+  .search-box input {{
+    width: 88px;
+  }}
+
+  .tool-btn span {{
+    display: none;
+  }}
+
+  .theme-btn .theme-name {{
+    display: none;
+  }}
+
+  .theme-note {{
+    display: none;
+  }}
+}}
+
+@media print {{
+  .dock,
+  .status-panel,
+  .theme-note {{
+    display: none !important;
+  }}
+
+  body::before {{
+    display: none;
+  }}
 }}
 </style>
 </head>
 <body>
+<div id="mindmap"></div>
 
-<!-- ── 工具栏 ── -->
-<div class="toolbar">
-  <a class="brand" href="index.html" title="返回首页">
-    <div class="brand-icon">{icon}</div>
-    <div>
-      <div class="brand-text">{title}</div>
-      <div class="brand-sub">{subtitle}</div>
+<section class="dock">
+  <div class="brand">
+    <div class="brand-mark">{index_chip}</div>
+    <div class="brand-copy">
+      <div class="brand-label">{label}</div>
+      <div class="brand-title">{heading}</div>
+      <div class="brand-subtitle">{subtitle}</div>
     </div>
-  </a>
-
-  <div class="search">
-    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input id="searchInput" type="text" placeholder="搜索节点…"/>
   </div>
 
-  <div class="sep"></div>
+  <div class="controls">
+    <label class="search-box" for="searchInput" title="搜索节点">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.65" y1="16.65" x2="21" y2="21"/></svg>
+      <input id="searchInput" type="text" placeholder="搜索节点"/>
+    </label>
 
-  <button class="tbtn" id="btnExpand" title="展开全部">
-    <svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-    <span>展开</span>
-  </button>
-  <button class="tbtn" id="btnCollapse" title="收起">
-    <svg viewBox="0 0 24 24"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-    <span>收起</span>
-  </button>
+    <button class="tool-btn" id="expandBtn" title="展开全部">
+      <svg viewBox="0 0 24 24"><polyline points="7 10 12 15 17 10"/><polyline points="7 4 12 9 17 4"/></svg>
+      <span>展开全部</span>
+    </button>
 
-  <div class="sep"></div>
+    <button class="tool-btn" id="resetBtn" title="恢复初始状态">
+      <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 3 3 9 9 9"/></svg>
+      <span>恢复初始</span>
+    </button>
 
-  <button class="tbtn tbtn-icon" id="btnZoomIn" title="放大">
-    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-  </button>
-  <button class="tbtn tbtn-icon" id="btnZoomOut" title="缩小">
-    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-  </button>
-  <button class="tbtn tbtn-icon" id="btnFit" title="适配画面">
-    <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
-  </button>
+    <button class="tool-btn compact" id="zoomInBtn" title="放大">
+      <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="21" y1="21" x2="15.5" y2="15.5"/><line x1="10.5" y1="7.5" x2="10.5" y2="13.5"/><line x1="7.5" y1="10.5" x2="13.5" y2="10.5"/></svg>
+    </button>
 
-  <div class="sep"></div>
+    <button class="tool-btn compact" id="zoomOutBtn" title="缩小">
+      <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="21" y1="21" x2="15.5" y2="15.5"/><line x1="7.5" y1="10.5" x2="13.5" y2="10.5"/></svg>
+    </button>
 
-  <button class="tbtn tbtn-icon" id="btnDark" title="主题切换">
-    <svg id="iconSun" viewBox="0 0 24 24" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    <svg id="iconMoon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-  </button>
-  <button class="tbtn tbtn-icon" id="btnFS" title="全屏">
-    <svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-  </button>
-</div>
+    <button class="tool-btn compact" id="fitBtn" title="适配画面">
+      <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+    </button>
 
-<!-- ── 思维导图 ── -->
-<div class="markmap">
-<script type="text/template">
----
-markmap:
-  initialExpandLevel: 2
-  maxWidth: 380
-  colorFreezeLevel: 3
----
+    <button class="tool-btn theme-btn" id="themeBtn" title="切换主题">
+      <svg viewBox="0 0 24 24"><path d="M21 12.6A8.6 8.6 0 1 1 11.4 3a7 7 0 0 0 9.6 9.6Z"/></svg>
+      <span class="theme-name" id="themeName">Paper</span>
+    </button>
 
-{markdown_content}
+    <button class="tool-btn compact" id="fullscreenBtn" title="全屏">
+      <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+    </button>
+  </div>
+</section>
 
-</script>
-</div>
+<section class="status-panel">
+  <div class="status-pill"><span class="status-dot"></span><span id="nodeCount">- 节点</span></div>
+  <div class="status-pill"><span class="status-dot"></span><span id="depthCount">- 层</span></div>
+</section>
 
-<!-- ── 统计 ── -->
-<div class="stats">
-  <div class="stat"><span class="stat-dot"></span><span id="sNodes">–</span></div>
-  <div class="stat"><span class="stat-dot"></span><span id="sDepth">–</span></div>
-</div>
+<section class="theme-note">
+  <div class="theme-note-title">Theme</div>
+  <div class="theme-note-body" id="themeNoteBody">Paper theme uses serif labels and a warmer page surface.</div>
+</section>
 
-<!-- ── markmap autoloader ── -->
-<script src="https://cdn.jsdelivr.net/npm/markmap-autoloader@latest"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://unpkg.com/markmap-view@0.18.12/dist/browser/index.js"></script>
+<script src="https://unpkg.com/markmap-lib@0.18.12/dist/browser/index.iife.js"></script>
 <script>
-(() => {{
-  /* ── 等待 markmap 渲染完成 ── */
-  const waitForMM = (cb, tries = 0) => {{
-    /* autoloader 在 .markmap 的子 SVG 上挂载实例 */
-    const el = document.querySelector('.markmap');
-    const svg = el && el.querySelector('svg');
-    const mm = svg && (svg.markmap || svg.__markmap__);
-    /* 也检查全局 */
-    const mmGlobal = window.markmap;
-    if (mm && mm.state && mm.state.data) {{
-      cb(mm, svg); return;
+;(async () => {{
+  const runtime = window.markmap;
+  if (!runtime) return;
+  const {{ Transformer, Markmap, loadCSS, loadJS }} = runtime;
+  const markdown = {markdown_json};
+  const transformer = new Transformer();
+  const result = transformer.transform(markdown);
+  const root = result.root;
+  const features = result.features;
+
+  if (loadCSS || loadJS) {{
+    const assets = transformer.getUsedAssets(features);
+    if (assets.styles && loadCSS) loadCSS(assets.styles);
+    if (assets.scripts && loadJS) {{
+      await loadJS(assets.scripts, {{ getMarkmap: () => window.markmap }});
     }}
-    /* 备选：检查 SVG 是否已有子元素（渲染完成标志） */
-    if (svg && svg.querySelector('g') && svg.querySelector('g').children.length > 2) {{
-      /* 无直接实例引用，用轮询 DOM 操作替代 */
-      cb(null, svg); return;
-    }}
-    if (tries < 100) setTimeout(() => waitForMM(cb, tries + 1), 200);
+  }}
+
+  const clone = (value) => JSON.parse(JSON.stringify(value));
+  const initialRoot = clone(root);
+
+  const themeMeta = {{
+    paper: {{
+      name: "Paper",
+      note: "Paper theme uses serif labels and a warmer page surface.",
+      palette: ["#2b2117", "#7c4f29", "#8f6c45", "#4f6454", "#49606e"],
+      font: '"Fraunces", "Noto Serif SC", serif',
+    }},
+    nocturne: {{
+      name: "Nocturne",
+      note: "Nocturne theme shifts to cleaner sans labels and a darker studio palette.",
+      palette: ["#edf3f5", "#a9d1ca", "#d5bea0", "#b6c2d4", "#d5d1ca"],
+      font: '"Manrope", "Noto Sans SC", sans-serif',
+    }},
   }};
 
-  waitForMM((mm, svg) => {{
-    if (!mm) {{
-      /* 没有获取到实例引用，按钮暂不绑定 */
-      console.log('Markmap rendered but instance not accessible');
-      return;
-    }}
+  const preferredDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  let currentTheme = localStorage.getItem("mindmap-theme") || (preferredDark ? "nocturne" : "paper");
+  document.documentElement.dataset.theme = currentTheme;
 
-    /* ── 统计 ── */
-    let nc = 0, md = 0;
-    const walk = (n, d) => {{ nc++; if (d > md) md = d; (n.children||[]).forEach(c => walk(c, d+1)); }};
-    if (mm.state && mm.state.data) walk(mm.state.data, 0);
-    document.getElementById('sNodes').textContent = nc + ' 节点';
-    document.getElementById('sDepth').textContent = md + ' 层';
-
-    /* ── 克隆树 + 遍历 ── */
-    const cloneTree = (n) => ({{ ...n, payload: n.payload ? {{ ...n.payload }} : {{}}, children: (n.children||[]).map(cloneTree) }});
-    const walkSet = (n, d, fn) => {{ fn(n, d); (n.children||[]).forEach(c => walkSet(c, d+1, fn)); }};
-
-    /* ── 展开/收起 ── */
-    document.getElementById('btnExpand').addEventListener('click', async () => {{
-      const r = cloneTree(mm.state.data);
-      walkSet(r, 0, (n) => {{ n.payload = {{ ...(n.payload||{{}}), fold: 0 }}; }});
-      await mm.setData(r); await mm.fit();
-    }});
-    document.getElementById('btnCollapse').addEventListener('click', async () => {{
-      const r = cloneTree(mm.state.data);
-      walkSet(r, 0, (n, d) => {{ n.payload = {{ ...(n.payload||{{}}), fold: d >= 2 ? 1 : 0 }}; }});
-      await mm.setData(r); await mm.fit();
-    }});
-
-    /* ── 缩放 ── */
-    document.getElementById('btnZoomIn').addEventListener('click', () => {{
-      mm.rescale(1.25);
-    }});
-    document.getElementById('btnZoomOut').addEventListener('click', () => {{
-      mm.rescale(0.8);
-    }});
-    document.getElementById('btnFit').addEventListener('click', () => {{
-      mm.fit();
-    }});
-
-    /* ── 搜索 ── */
-    let timer;
-    document.getElementById('searchInput').addEventListener('input', (e) => {{
-      clearTimeout(timer);
-      timer = setTimeout(() => {{
-        const q = e.target.value.trim().toLowerCase();
-        svg.querySelectorAll('text').forEach(t => {{
-          const match = q && t.textContent.toLowerCase().includes(q);
-          t.style.fill = match ? 'var(--g-from)' : '';
-          t.style.fontWeight = match ? '800' : '';
-          t.style.fontSize = match ? '1.1em' : '';
-        }});
-      }}, 200);
-    }});
-  }});
-
-  /* ── 深色模式 ── */
-  const apply = (dark) => {{
-    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-    document.getElementById('iconSun').style.display = dark ? 'block' : 'none';
-    document.getElementById('iconMoon').style.display = dark ? 'none' : 'block';
-    localStorage.setItem('mm-theme', dark ? 'dark' : 'light');
+  const nodeColor = (node) => {{
+    const palette = themeMeta[currentTheme].palette;
+    const depth = node.state && typeof node.state.depth === "number" ? node.state.depth : 0;
+    return palette[depth % palette.length];
   }};
-  const saved = localStorage.getItem('mm-theme');
-  apply(saved === 'dark' || (!saved && matchMedia('(prefers-color-scheme:dark)').matches));
-  document.getElementById('btnDark').addEventListener('click', () => {{
-    apply(document.documentElement.getAttribute('data-theme') !== 'dark');
+
+  const mm = Markmap.create("#mindmap", {{
+    autoFit: true,
+    duration: 120,
+    maxWidth: 280,
+    paddingX: 18,
+    spacingVertical: 6,
+    initialExpandLevel: 2,
+    color: nodeColor,
+    lineWidth: (node) => Math.max(1.1, 2.4 - ((node.state && node.state.depth) || 0) * 0.28),
+  }}, clone(initialRoot));
+
+  const applyTextFont = () => {{
+    const font = themeMeta[currentTheme].font;
+    document.querySelectorAll("#mindmap text").forEach((text) => {{
+      text.style.fontFamily = font;
+    }});
+  }};
+
+  const applyTheme = () => {{
+    document.documentElement.dataset.theme = currentTheme;
+    document.getElementById("themeName").textContent = themeMeta[currentTheme].name;
+    document.getElementById("themeNoteBody").textContent = themeMeta[currentTheme].note;
+    localStorage.setItem("mindmap-theme", currentTheme);
+    mm.setOptions({{ color: nodeColor }});
+    mm.renderData(mm.state.data);
+    applyTextFont();
+  }};
+
+  const countStats = (node, depth = 0) => {{
+    let nodes = 1;
+    let maxDepth = depth;
+    (node.children || []).forEach((child) => {{
+      const result = countStats(child, depth + 1);
+      nodes += result.nodes;
+      maxDepth = Math.max(maxDepth, result.maxDepth);
+    }});
+    return {{ nodes, maxDepth }};
+  }};
+
+  const stats = countStats(initialRoot, 0);
+  document.getElementById("nodeCount").textContent = `${{stats.nodes}} 节点`;
+  document.getElementById("depthCount").textContent = `${{stats.maxDepth}} 层`;
+
+  const walk = (node, callback, depth = 0) => {{
+    callback(node, depth);
+    (node.children || []).forEach((child) => walk(child, callback, depth + 1));
+  }};
+
+  document.getElementById("expandBtn").addEventListener("click", async () => {{
+    const expanded = clone(initialRoot);
+    walk(expanded, (node) => {{
+      node.payload = Object.assign({{}}, node.payload || {{}}, {{ fold: 0 }});
+    }});
+    await mm.setData(expanded);
+    mm.fit();
+    applyTextFont();
   }});
 
-  /* ── 全屏 ── */
-  document.getElementById('btnFS').addEventListener('click', () => {{
-    document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+  document.getElementById("resetBtn").addEventListener("click", async () => {{
+    await mm.setData(clone(initialRoot));
+    mm.fit();
+    applyTextFont();
   }});
+
+  document.getElementById("zoomInBtn").addEventListener("click", () => mm.rescale(1.22));
+  document.getElementById("zoomOutBtn").addEventListener("click", () => mm.rescale(0.82));
+  document.getElementById("fitBtn").addEventListener("click", () => mm.fit());
+
+  document.getElementById("themeBtn").addEventListener("click", () => {{
+    currentTheme = currentTheme === "paper" ? "nocturne" : "paper";
+    applyTheme();
+  }});
+
+  document.getElementById("fullscreenBtn").addEventListener("click", () => {{
+    if (document.fullscreenElement) {{
+      document.exitFullscreen();
+    }} else {{
+      document.documentElement.requestFullscreen();
+    }}
+  }});
+
+  let searchTimer;
+  document.getElementById("searchInput").addEventListener("input", (event) => {{
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {{
+      const query = event.target.value.trim().toLowerCase();
+      document.querySelectorAll("#mindmap text").forEach((text) => {{
+        const match = query && text.textContent.toLowerCase().includes(query);
+        text.classList.toggle("mm-match", !!match);
+      }});
+      applyTextFont();
+    }}, 120);
+  }});
+
+  applyTheme();
+  mm.fit();
+  setTimeout(applyTextFont, 80);
 }})();
 </script>
 </body>
 </html>
-""")
+"""
+)
 
 
-# ── 着陆页模板 ──────────────────────────────────────────
-INDEX_TEMPLATE = textwrap.dedent("""\
+INDEX_TEMPLATE = textwrap.dedent(
+    """\
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -492,153 +648,270 @@ INDEX_TEMPLATE = textwrap.dedent("""\
 <title>推荐曝光结构外部性研究导图</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet"/>
 <style>
-:root {
-  --bg: #f0f4f8; --fg: #1e293b; --surface: #fff; --border: rgba(148,163,184,.15);
-  --shadow: 0 8px 30px rgba(15,23,42,.06); --font: "Inter","Noto Sans SC",system-ui,sans-serif;
-}
-@media (prefers-color-scheme:dark) {
-  :root { --bg: #0c1222; --fg: #e2e8f0; --surface: #1e293b; --border: rgba(71,85,105,.4);
-           --shadow: 0 8px 30px rgba(0,0,0,.3); }
-}
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { height: 100%; }
-body {
-  font-family: var(--font); background: var(--bg); color: var(--fg);
-  min-height: 100vh; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; padding: 40px 20px;
-  position: relative; overflow: hidden;
-}
-/* 装饰光晕 */
-body::before {
-  content: '';
-  position: absolute; top: -30%; left: -20%;
-  width: 70vw; height: 70vw; border-radius: 50%;
-  background: radial-gradient(circle, rgba(99,102,241,.12) 0%, transparent 70%);
+:root {{
+  --bg: #efe5d5;
+  --bg-deep: #f7f1e8;
+  --surface: rgba(255, 252, 247, 0.9);
+  --line: rgba(75, 56, 38, 0.12);
+  --text: #22170f;
+  --text-soft: #6e5d4c;
+  --shadow: 0 20px 56px rgba(53, 37, 20, 0.12);
+  --sans: "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --serif: "Fraunces", "Noto Serif SC", serif;
+}}
+
+@media (prefers-color-scheme: dark) {{
+  :root {{
+    --bg: #141a1f;
+    --bg-deep: #1c252b;
+    --surface: rgba(24, 31, 37, 0.9);
+    --line: rgba(184, 206, 212, 0.12);
+    --text: #e6ecef;
+    --text-soft: #a9b8be;
+    --shadow: 0 20px 56px rgba(0, 0, 0, 0.34);
+  }}
+}}
+
+*,
+*::before,
+*::after {{
+  box-sizing: border-box;
+}}
+
+body {{
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 16% 14%, rgba(154, 93, 47, 0.18), transparent 24%),
+    radial-gradient(circle at 84% 18%, rgba(33, 95, 90, 0.18), transparent 24%),
+    linear-gradient(180deg, var(--bg-deep) 0%, var(--bg) 100%);
+  font-family: var(--sans);
+}}
+
+body::before {{
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 42px 42px;
+  opacity: 0.14;
   pointer-events: none;
-}
-body::after {
-  content: '';
-  position: absolute; bottom: -25%; right: -15%;
-  width: 55vw; height: 55vw; border-radius: 50%;
-  background: radial-gradient(circle, rgba(8,145,178,.1) 0%, transparent 70%);
-  pointer-events: none;
-}
-.content { position: relative; z-index: 1; text-align: center; }
-h1 { font-size: 2.8rem; font-weight: 900; letter-spacing: -.04em; margin-bottom: 8px;
-     background: linear-gradient(135deg, #6366f1, #a855f7, #0891b2);
-     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-     background-clip: text; }
-.subtitle { font-size: 1rem; opacity: .55; margin-bottom: 56px; font-weight: 500; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px; width: 100%; max-width: 820px; }
-.card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 24px; padding: 36px 32px; text-decoration: none; color: var(--fg);
-  transition: transform .3s cubic-bezier(.4,0,.2,1), box-shadow .3s;
-  box-shadow: var(--shadow); position: relative; overflow: hidden;
-}
-.card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
-  background: var(--card-gradient); opacity: 0; transition: opacity .3s;
-}
-.card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(15,23,42,.12); }
-.card:hover::before { opacity: 1; }
-.card-icon {
-  width: 52px; height: 52px; border-radius: 16px;
-  background: var(--card-gradient);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 24px; margin-bottom: 20px;
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--card-from) 25%, transparent);
-}
-.card-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -.02em; }
-.card-desc { font-size: .9rem; opacity: .55; line-height: 1.7; }
-.card-arrow {
-  position: absolute; bottom: 24px; right: 24px;
-  width: 32px; height: 32px; border-radius: 50%;
-  background: color-mix(in srgb, var(--fg) 6%, transparent);
-  display: flex; align-items: center; justify-content: center;
-  transition: background .2s, transform .2s;
-}
-.card:hover .card-arrow { background: var(--card-gradient); transform: translateX(2px); }
-.card-arrow svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.5; }
-.card:hover .card-arrow svg { stroke: #fff; }
-.footer { margin-top: 56px; font-size: .8rem; opacity: .35; font-weight: 500; }
-.footer a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
-@media (max-width: 768px) { h1 { font-size: 2rem; } .cards { grid-template-columns: 1fr; } }
+}}
+
+.shell {{
+  position: relative;
+  z-index: 1;
+  width: min(760px, 100%);
+}}
+
+.hero {{
+  margin-bottom: 26px;
+}}
+
+.kicker {{
+  font: 700 11px/1 var(--sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: 10px;
+}}
+
+h1 {{
+  margin: 0 0 10px;
+  font: 700 clamp(2rem, 5vw, 3.5rem)/0.95 var(--serif);
+  letter-spacing: -0.04em;
+}}
+
+.lead {{
+  max-width: 620px;
+  color: var(--text-soft);
+  font: 600 14px/1.7 var(--sans);
+}}
+
+.cards {{
+  display: grid;
+  gap: 14px;
+}}
+
+.card {{
+  display: grid;
+  grid-template-columns: 76px 1fr 30px;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 18px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: inherit;
+  text-decoration: none;
+  transition: transform .14s ease, border-color .14s ease, background .14s ease;
+}}
+
+.card:hover {{
+  transform: translateY(-2px);
+}}
+
+.chip {{
+  height: 52px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fffaf2;
+  font: 800 18px/1 var(--sans);
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(255,255,255,0.22);
+}}
+
+.card-copy {{
+  min-width: 0;
+}}
+
+.card-label {{
+  font: 700 11px/1 var(--sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: 6px;
+}}
+
+.card-title {{
+  font: 700 24px/1.08 var(--serif);
+  letter-spacing: -0.03em;
+  margin-bottom: 6px;
+}}
+
+.card-subtitle {{
+  color: var(--text-soft);
+  font: 600 13px/1.6 var(--sans);
+}}
+
+.arrow {{
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+}}
+
+.arrow svg {{
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}}
+
+.footer {{
+  margin-top: 18px;
+  color: var(--text-soft);
+  font: 700 11px/1.5 var(--sans);
+}}
+
+.footer a {{
+  color: inherit;
+}}
+
+@media (max-width: 640px) {{
+  .card {{
+    grid-template-columns: 62px 1fr;
+  }}
+
+  .arrow {{
+    display: none;
+  }}
+
+  .card-title {{
+    font-size: 20px;
+  }}
+}}
 </style>
 </head>
 <body>
-<div class="content">
-<h1>结构外部性研究导图</h1>
-<p class="subtitle">推荐曝光分配 · 结构外部性 · 审计与治理</p>
-<div class="cards">
-{cards_html}
-</div>
-<p class="footer">基于 <a href="https://markmap.js.org/" target="_blank">Markmap</a> 构建 · 源码托管于 <a href="https://github.com/2711944586/mindmap" target="_blank">GitHub</a></p>
-</div>
+<main class="shell">
+  <section class="hero">
+    <div class="kicker">Interactive Atlas</div>
+    <h1>推荐曝光结构外部性研究导图</h1>
+    <div class="lead">保留更克制的首页结构与更轻的页面负担，分别进入文献综述图谱和最新论文的 research journey 图谱。</div>
+  </section>
+
+  <section class="cards">
+    {cards_html}
+  </section>
+
+  <div class="footer">基于 <a href="https://markmap.js.org/" target="_blank">Markmap</a> 构建 · 仓库：<a href="https://github.com/2711944586/mindmap" target="_blank">2711944586/mindmap</a></div>
+</main>
 </body>
 </html>
-""")
+"""
+)
 
-CARD_TEMPLATE = textwrap.dedent("""\
-<a class="card" href="{stem}.html" style="--card-gradient: linear-gradient(135deg, {gradient_from}, {gradient_to}); --card-from: {gradient_from};">
-  <div class="card-icon">{icon}</div>
-  <div class="card-title">{title}</div>
-  <div class="card-desc">{subtitle}</div>
-  <div class="card-arrow"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+
+CARD_TEMPLATE = textwrap.dedent(
+    """\
+<a class="card" href="{stem}.html">
+  <div class="chip" style="background: linear-gradient(135deg, {accent}, {accent_soft});">{index_chip}</div>
+  <div class="card-copy">
+    <div class="card-label">{label}</div>
+    <div class="card-title">{title}</div>
+    <div class="card-subtitle">{subtitle}</div>
+  </div>
+  <div class="arrow">
+    <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+  </div>
 </a>
-""")
+"""
+)
 
 
-# ── 核心渲染逻辑 ──────────────────────────────────────────
 def render_page(stem: str, meta: dict[str, str]) -> None:
-    md_path = ROOT / f"{stem}.mm.md"
+    markdown_path = ROOT / f"{stem}.mm.md"
     html_path = ROOT / f"{stem}.html"
-    if not md_path.exists():
-        print(f"[SKIP] {md_path.name} not found")
+    if not markdown_path.exists():
+        print(f"[SKIP] {markdown_path.name} not found")
         return
 
-    md_content = md_path.read_text(encoding="utf-8")
-    # HTML 转义 markdown 内容以安全嵌入 <div>
-    md_escaped = html.escape(md_content, quote=False)
-    # 恢复 markdown 结构字符
-    md_escaped = md_escaped.replace("&amp;", "&")
-
-    page_html = PAGE_TEMPLATE.format(
-        title=meta["title"],
-        subtitle=meta["subtitle"],
-        icon=meta["icon"],
-        gradient_from=meta["gradient_from"],
-        gradient_to=meta["gradient_to"],
-        markdown_content=md_content,  # autoloader 需要原始 markdown
+    markdown_text = markdown_path.read_text(encoding="utf-8")
+    html_text = PAGE_TEMPLATE.format(
+        title=html.escape(meta["title"]),
+        heading=html.escape(meta["title"]),
+        subtitle=html.escape(meta["subtitle"]),
+        label=html.escape(meta["label"]),
+        accent=meta["accent"],
+        accent_soft=meta["accent_soft"],
+        index_chip=html.escape(meta["index_chip"]),
+        markdown_json=json.dumps(markdown_text, ensure_ascii=False),
     )
-    html_path.write_text(page_html, encoding="utf-8")
-    print(f"[OK] {html_path.name}  ({md_path.stat().st_size:,} bytes → {html_path.stat().st_size:,} bytes)")
+    html_path.write_text(html_text, encoding="utf-8")
+    print(f"[OK] {html_path.name}  ({markdown_path.stat().st_size:,} bytes → {html_path.stat().st_size:,} bytes)")
 
 
 def render_index() -> None:
-    cards = "\n".join(
+    cards = [
         CARD_TEMPLATE.format(stem=stem, **meta)
         for stem, meta in PAGES.items()
-    )
-    index_html = INDEX_TEMPLATE.replace("{cards_html}", cards)
-    out = ROOT / "index.html"
-    out.write_text(index_html, encoding="utf-8")
-    print(f"[OK] {out.name}")
-
-
-def serve(port: int = 8080) -> None:
-    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(ROOT))
-    with http.server.HTTPServer(("", port), handler) as srv:
-        print(f"\n  🌐 预览: http://localhost:{port}/index.html\n  Ctrl+C 停止\n")
-        srv.serve_forever()
+    ]
+    index_path = ROOT / "index.html"
+    index_path.write_text(INDEX_TEMPLATE.format(cards_html="\n".join(cards)), encoding="utf-8")
+    print("[OK] index.html")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="渲染 Markmap 思维导图")
-    parser.add_argument("--serve", action="store_true", help="生成后启动 HTTP 预览")
-    parser.add_argument("--port", type=int, default=8080, help="预览端口 (默认 8080)")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--serve", action="store_true")
+    parser.add_argument("--port", type=int, default=8080)
     args = parser.parse_args()
 
     for stem, meta in PAGES.items():
@@ -646,7 +919,10 @@ def main() -> None:
     render_index()
 
     if args.serve:
-        serve(args.port)
+        handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(ROOT))
+        with http.server.ThreadingHTTPServer(("", args.port), handler) as server:
+            print(f"\n  http://localhost:{args.port}\n")
+            server.serve_forever()
 
 
 if __name__ == "__main__":

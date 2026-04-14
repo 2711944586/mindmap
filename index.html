@@ -6,103 +6,233 @@
 <title>推荐曝光结构外部性研究导图</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet"/>
 <style>
 :root {
-  --bg: #f0f4f8; --fg: #1e293b; --surface: #fff; --border: rgba(148,163,184,.15);
-  --shadow: 0 8px 30px rgba(15,23,42,.06); --font: "Inter","Noto Sans SC",system-ui,sans-serif;
+  --bg: #efe5d5;
+  --bg-deep: #f7f1e8;
+  --surface: rgba(255, 252, 247, 0.9);
+  --line: rgba(75, 56, 38, 0.12);
+  --text: #22170f;
+  --text-soft: #6e5d4c;
+  --shadow: 0 20px 56px rgba(53, 37, 20, 0.12);
+  --sans: "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --serif: "Fraunces", "Noto Serif SC", serif;
 }
-@media (prefers-color-scheme:dark) {
-  :root { --bg: #0c1222; --fg: #e2e8f0; --surface: #1e293b; --border: rgba(71,85,105,.4);
-           --shadow: 0 8px 30px rgba(0,0,0,.3); }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141a1f;
+    --bg-deep: #1c252b;
+    --surface: rgba(24, 31, 37, 0.9);
+    --line: rgba(184, 206, 212, 0.12);
+    --text: #e6ecef;
+    --text-soft: #a9b8be;
+    --shadow: 0 20px 56px rgba(0, 0, 0, 0.34);
+  }
 }
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { height: 100%; }
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
-  font-family: var(--font); background: var(--bg); color: var(--fg);
-  min-height: 100vh; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; padding: 40px 20px;
-  position: relative; overflow: hidden;
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 16% 14%, rgba(154, 93, 47, 0.18), transparent 24%),
+    radial-gradient(circle at 84% 18%, rgba(33, 95, 90, 0.18), transparent 24%),
+    linear-gradient(180deg, var(--bg-deep) 0%, var(--bg) 100%);
+  font-family: var(--sans);
 }
-/* 装饰光晕 */
+
 body::before {
-  content: '';
-  position: absolute; top: -30%; left: -20%;
-  width: 70vw; height: 70vw; border-radius: 50%;
-  background: radial-gradient(circle, rgba(99,102,241,.12) 0%, transparent 70%);
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 42px 42px;
+  opacity: 0.14;
   pointer-events: none;
 }
-body::after {
-  content: '';
-  position: absolute; bottom: -25%; right: -15%;
-  width: 55vw; height: 55vw; border-radius: 50%;
-  background: radial-gradient(circle, rgba(8,145,178,.1) 0%, transparent 70%);
-  pointer-events: none;
+
+.shell {
+  position: relative;
+  z-index: 1;
+  width: min(760px, 100%);
 }
-.content { position: relative; z-index: 1; text-align: center; }
-h1 { font-size: 2.8rem; font-weight: 900; letter-spacing: -.04em; margin-bottom: 8px;
-     background: linear-gradient(135deg, #6366f1, #a855f7, #0891b2);
-     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-     background-clip: text; }
-.subtitle { font-size: 1rem; opacity: .55; margin-bottom: 56px; font-weight: 500; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px; width: 100%; max-width: 820px; }
+
+.hero {
+  margin-bottom: 26px;
+}
+
+.kicker {
+  font: 700 11px/1 var(--sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: 10px;
+}
+
+h1 {
+  margin: 0 0 10px;
+  font: 700 clamp(2rem, 5vw, 3.5rem)/0.95 var(--serif);
+  letter-spacing: -0.04em;
+}
+
+.lead {
+  max-width: 620px;
+  color: var(--text-soft);
+  font: 600 14px/1.7 var(--sans);
+}
+
+.cards {
+  display: grid;
+  gap: 14px;
+}
+
 .card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 24px; padding: 36px 32px; text-decoration: none; color: var(--fg);
-  transition: transform .3s cubic-bezier(.4,0,.2,1), box-shadow .3s;
-  box-shadow: var(--shadow); position: relative; overflow: hidden;
+  display: grid;
+  grid-template-columns: 76px 1fr 30px;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 18px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: inherit;
+  text-decoration: none;
+  transition: transform .14s ease, border-color .14s ease, background .14s ease;
 }
-.card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
-  background: var(--card-gradient); opacity: 0; transition: opacity .3s;
+
+.card:hover {
+  transform: translateY(-2px);
 }
-.card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(15,23,42,.12); }
-.card:hover::before { opacity: 1; }
-.card-icon {
-  width: 52px; height: 52px; border-radius: 16px;
-  background: var(--card-gradient);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 24px; margin-bottom: 20px;
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--card-from) 25%, transparent);
+
+.chip {
+  height: 52px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fffaf2;
+  font: 800 18px/1 var(--sans);
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(255,255,255,0.22);
 }
-.card-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -.02em; }
-.card-desc { font-size: .9rem; opacity: .55; line-height: 1.7; }
-.card-arrow {
-  position: absolute; bottom: 24px; right: 24px;
-  width: 32px; height: 32px; border-radius: 50%;
-  background: color-mix(in srgb, var(--fg) 6%, transparent);
-  display: flex; align-items: center; justify-content: center;
-  transition: background .2s, transform .2s;
+
+.card-copy {
+  min-width: 0;
 }
-.card:hover .card-arrow { background: var(--card-gradient); transform: translateX(2px); }
-.card-arrow svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.5; }
-.card:hover .card-arrow svg { stroke: #fff; }
-.footer { margin-top: 56px; font-size: .8rem; opacity: .35; font-weight: 500; }
-.footer a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
-@media (max-width: 768px) { h1 { font-size: 2rem; } .cards { grid-template-columns: 1fr; } }
+
+.card-label {
+  font: 700 11px/1 var(--sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: 6px;
+}
+
+.card-title {
+  font: 700 24px/1.08 var(--serif);
+  letter-spacing: -0.03em;
+  margin-bottom: 6px;
+}
+
+.card-subtitle {
+  color: var(--text-soft);
+  font: 600 13px/1.6 var(--sans);
+}
+
+.arrow {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+}
+
+.arrow svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.footer {
+  margin-top: 18px;
+  color: var(--text-soft);
+  font: 700 11px/1.5 var(--sans);
+}
+
+.footer a {
+  color: inherit;
+}
+
+@media (max-width: 640px) {
+  .card {
+    grid-template-columns: 62px 1fr;
+  }
+
+  .arrow {
+    display: none;
+  }
+
+  .card-title {
+    font-size: 20px;
+  }
+}
 </style>
 </head>
 <body>
-<div class="content">
-<h1>结构外部性研究导图</h1>
-<p class="subtitle">推荐曝光分配 · 结构外部性 · 审计与治理</p>
-<div class="cards">
-<a class="card" href="literature_review.html" style="--card-gradient: linear-gradient(135deg, #6366f1, #a855f7); --card-from: #6366f1;">
-  <div class="card-icon">📚</div>
-  <div class="card-title">文献综述图谱</div>
-  <div class="card-desc">推荐曝光 · 结构外部性 · 受约束治理</div>
-  <div class="card-arrow"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+<main class="shell">
+  <section class="hero">
+    <div class="kicker">Interactive Atlas</div>
+    <h1>推荐曝光结构外部性研究导图</h1>
+    <div class="lead">保留更克制的首页结构与更轻的页面负担，分别进入文献综述图谱和最新论文的 research journey 图谱。</div>
+  </section>
+
+  <section class="cards">
+    <a class="card" href="literature_review.html">
+  <div class="chip" style="background: linear-gradient(135deg, #9a5d2f, #d0b38f);">01</div>
+  <div class="card-copy">
+    <div class="card-label">Literature Map</div>
+    <div class="card-title">文献综述图谱</div>
+    <div class="card-subtitle">推荐曝光 · 结构外部性 · 证据与治理</div>
+  </div>
+  <div class="arrow">
+    <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+  </div>
 </a>
 
-<a class="card" href="research_journey.html" style="--card-gradient: linear-gradient(135deg, #0891b2, #06b6d4); --card-from: #0891b2;">
-  <div class="card-icon">🧭</div>
-  <div class="card-title">论文研究图谱</div>
-  <div class="card-desc">对象层次 · 三组件框架 · 理论边界 · 评估协议</div>
-  <div class="card-arrow"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+<a class="card" href="research_journey.html">
+  <div class="chip" style="background: linear-gradient(135deg, #215f5a, #93bdb6);">02</div>
+  <div class="card-copy">
+    <div class="card-label">Research Journey</div>
+    <div class="card-title">研究思考图谱</div>
+    <div class="card-subtitle">对象层次 · 三组件框架 · 评估协议 · 边界</div>
+  </div>
+  <div class="arrow">
+    <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+  </div>
 </a>
 
-</div>
-<p class="footer">基于 <a href="https://markmap.js.org/" target="_blank">Markmap</a> 构建 · 源码托管于 <a href="https://github.com/2711944586/mindmap" target="_blank">GitHub</a></p>
-</div>
+  </section>
+
+  <div class="footer">基于 <a href="https://markmap.js.org/" target="_blank">Markmap</a> 构建 · 仓库：<a href="https://github.com/2711944586/mindmap" target="_blank">2711944586/mindmap</a></div>
+</main>
 </body>
 </html>
